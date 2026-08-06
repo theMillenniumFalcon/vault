@@ -1,5 +1,13 @@
 {
   "name": "vault",
   "private": true,
-  "workspaces": ["packages/*", "apps/*"]
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "bun run build --filter=vault-memory && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.0"
+  }
 }

@@ -19,14 +19,32 @@
       "require": "./dist/schema.cjs"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theMillenniumFalcon/vault.git",
+    "directory": "packages/vault-memory"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "memory",
+    "llm",
+    "drizzle",
+    "embeddings",
+    "rag"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "bun run build",
-    "verify:consumer": "bun run build && node scripts/verify-consumer.mjs"
+    "verify:consumer": "bun run build && node scripts/verify-consumer.mjs",
+    "publish:public": "npm publish --access public"
   },
   "peerDependencies": {
     "drizzle-orm": "^0.44.0"
