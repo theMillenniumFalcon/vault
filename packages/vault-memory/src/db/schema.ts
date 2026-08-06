@@ -16,3 +16,21 @@ export const claims = sqliteTable("claims", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   lastAccessedAt: integer("last_accessed_at", { mode: "timestamp" }),
 });
+
+export const agentAuthority = sqliteTable("agent_authority", {
+  id: text("id").primaryKey(),
+  entity: text("entity").notNull(), // supports wildcard/prefix match, e.g. "user.schedule.*"
+  agentId: text("agent_id").notNull(),
+  weight: real("weight").notNull(), // 0-1
+});
+
+export const disputes = sqliteTable("disputes", {
+  id: text("id").primaryKey(),
+  claimAId: text("claim_a_id").notNull(),
+  claimBId: text("claim_b_id").notNull(),
+  entity: text("entity").notNull(),
+  resolvedOp: text("resolved_op"), // null until resolved
+  resolutionStrategy: text("resolution_strategy"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  resolvedAt: integer("resolved_at", { mode: "timestamp" }),
+});

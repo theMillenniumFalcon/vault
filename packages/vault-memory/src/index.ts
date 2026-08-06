@@ -1,4 +1,4 @@
-export { claims } from "./db/schema";
+export { agentAuthority, claims, disputes } from "./db/schema";
 export {
   createDefaultOpenAILLM,
   resolveLLM,

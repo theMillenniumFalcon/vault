@@ -19,6 +19,24 @@ export function createTestDb(): VaultDb {
       embedding TEXT,
       created_at INTEGER NOT NULL,
       last_accessed_at INTEGER
+    );
+
+    CREATE TABLE agent_authority (
+      id TEXT PRIMARY KEY,
+      entity TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      weight REAL NOT NULL
+    );
+
+    CREATE TABLE disputes (
+      id TEXT PRIMARY KEY,
+      claim_a_id TEXT NOT NULL,
+      claim_b_id TEXT NOT NULL,
+      entity TEXT NOT NULL,
+      resolved_op TEXT,
+      resolution_strategy TEXT,
+      created_at INTEGER NOT NULL,
+      resolved_at INTEGER
     )
   `);
 
