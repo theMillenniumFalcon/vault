@@ -1,8 +1,13 @@
 import { eq } from "drizzle-orm";
-import { claims } from "./db/schema";
-import type { VaultDb } from "./db/types";
+import { claims, disputes } from "./db/schema";
+import type { DisputeInsert, VaultDb } from "./db/types";
 import { getClaimRow, rowToClaim } from "./search";
-import type { Claim, ClaimOp, ExtractedFact } from "./types";
+import type {
+  Claim,
+  ClaimOp,
+  CrossAgentClassifyResult,
+  ExtractedFact,
+} from "./types";
 import type { VectorStore } from "./vector-store/types";
 import { claimRowToVectorMeta } from "./vector-store/utils";
 
@@ -125,6 +130,96 @@ export async function applyOp(
   }
 
   throw new Error(`Unknown op: ${op}`);
+}
+
+async function supersedeClaims(
+  db: VaultDb,
+  vectorStore: VectorStore,
+  claimIds: string[],
+): Promise<void> {
+  for (const claimId of claimIds) {
+    await db
+      .update(claims)
+      .set({ status: "superseded" })
+      .where(eq(claims.id, claimId));
+    await vectorStore.remove(claimId);
+  }
+}
+
+export async function applyCrossAgentResolution(
+  db: VaultDb,
+  vectorStore: VectorStore,
+  resolution: CrossAgentClassifyResult,
+  fact: ExtractedFact,
+  embedding: number[],
+  sourceAgent: string,
+  conversationId: string,
+): Promise<Claim> {
+  if (resolution.op === "ADD") {
+    return applyOp(
+      db,
+      vectorStore,
+      "ADD",
+      fact,
+      embedding,
+      undefined,
+      sourceAgent,
+      conversationId,
+    );
+  }
+
+  if (resolution.op === "REPLACE") {
+    await supersedeClaims(db, vectorStore, resolution.supersedes);
+    return applyOp(
+      db,
+      vectorStore,
+      "ADD",
+      fact,
+      embedding,
+      undefined,
+      sourceAgent,
+      conversationId,
+    );
+  }
+
+  const embeddingJson = JSON.stringify(embedding);
+  const now = new Date();
+  const claimId = newClaimId();
+  const values = {
+    id: claimId,
+    entity: fact.entity,
+    text: fact.text,
+    type: fact.type,
+    sourceAgent,
+    conversationId,
+    confidence: 1,
+    status: "disputed" as const,
+    supersedes: null,
+    embedding: embeddingJson,
+    createdAt: now,
+    lastAccessedAt: null,
+  };
+
+  await db.insert(claims).values(values);
+  await db
+    .update(claims)
+    .set({ status: "disputed" })
+    .where(eq(claims.id, resolution.conflictingClaimId));
+
+  const dispute: DisputeInsert = {
+    id: crypto.randomUUID(),
+    claimAId: claimId,
+    claimBId: resolution.conflictingClaimId,
+    entity: fact.entity,
+    resolvedOp: null,
+    resolutionStrategy: null,
+    createdAt: now,
+    resolvedAt: null,
+  };
+  await db.insert(disputes).values(dispute);
+
+  await vectorStore.remove(resolution.conflictingClaimId);
+  return rowToClaim(values);
 }
 
 export async function syncClaimVectorFromRow(

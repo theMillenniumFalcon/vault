@@ -1,13 +1,15 @@
 import type { MemoryConfig } from "./config";
 import { claims } from "./db/schema";
 import { resolveEmbed } from "./embed";
-import { classify } from "./classify";
+import {
+  classifyAgainstOtherAgents,
+  classifyAgainstOwnHistory,
+} from "./classify";
 import { extractFacts } from "./extract";
-import { applyOp } from "./ops";
+import { applyCrossAgentResolution, applyOp } from "./ops";
 import {
   agentClaimFilter,
   search as searchClaims,
-  searchOwnClaims,
 } from "./search";
 import type { Claim, Message, ScoredClaim, SearchOpts } from "./types";
 
@@ -30,29 +32,44 @@ export class Memory {
 
     for (const fact of facts) {
       const embedding = await this.embed(fact.text);
-      const similar = await searchOwnClaims(
-        this.config.db,
-        this.config.vectorStore,
+      const ownResult = await classifyAgainstOwnHistory(
+        fact,
         this.agentId,
         embedding,
-        5,
-      );
-      const { op, targetClaimId } = await classify(
-        fact,
-        similar,
         this.config,
       );
 
-      if (op === "NOOP") continue;
+      if (ownResult.op === "NOOP") continue;
+
+      if (ownResult.op === "ADD") {
+        const crossResult = await classifyAgainstOtherAgents(
+          fact,
+          this.agentId,
+          embedding,
+          this.config,
+        );
+        results.push(
+          await applyCrossAgentResolution(
+            this.config.db,
+            this.config.vectorStore,
+            crossResult,
+            fact,
+            embedding,
+            this.agentId,
+            conversationId,
+          ),
+        );
+        continue;
+      }
 
       results.push(
         await applyOp(
           this.config.db,
           this.config.vectorStore,
-          op,
+          ownResult.op,
           fact,
           embedding,
-          targetClaimId,
+          ownResult.targetClaimId,
           this.agentId,
           conversationId,
         ),

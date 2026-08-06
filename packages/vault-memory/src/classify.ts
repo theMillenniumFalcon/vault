@@ -1,7 +1,14 @@
 import { z } from "zod";
-import type { LLMConfig } from "./config";
+import type { LLMConfig, MemoryConfig } from "./config";
 import { resolveLLM } from "./config";
-import type { Claim, ClassifyResult, ExtractedFact } from "./types";
+import { resolveConflict, strategyForEntity, toCrossAgentClassifyResult } from "./resolve";
+import { searchClaims, searchOwnClaims } from "./search";
+import type {
+  Claim,
+  ClassifyResult,
+  CrossAgentClassifyResult,
+  ExtractedFact,
+} from "./types";
 
 const classifyResponseSchema = z
   .object({
@@ -84,4 +91,51 @@ export async function classify(
   }
 
   return result;
+}
+
+export async function classifyAgainstOwnHistory(
+  fact: ExtractedFact,
+  agentId: string,
+  embedding: number[],
+  config: MemoryConfig,
+): Promise<ClassifyResult> {
+  const similarOwnClaims = await searchOwnClaims(
+    config.db,
+    config.vectorStore,
+    agentId,
+    embedding,
+    5,
+  );
+  return classify(fact, similarOwnClaims, config);
+}
+
+export async function classifyAgainstOtherAgents(
+  fact: ExtractedFact,
+  agentId: string,
+  embedding: number[],
+  config: MemoryConfig,
+): Promise<CrossAgentClassifyResult> {
+  const crossAgent = await searchClaims(
+    config.db,
+    config.vectorStore,
+    embedding,
+    {
+      excludeAgent: agentId,
+      entity: fact.entity,
+      status: "active",
+      limit: 5,
+    },
+  );
+
+  if (crossAgent.length === 0) return { op: "ADD" };
+
+  const strategy = strategyForEntity(fact.entity, config);
+  const resolution = await resolveConflict(
+    fact,
+    agentId,
+    crossAgent,
+    strategy,
+    config,
+  );
+  return toCrossAgentClassifyResult(resolution);
 }

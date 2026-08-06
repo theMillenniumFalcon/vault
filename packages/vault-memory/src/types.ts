@@ -35,6 +35,11 @@ export interface ClassifyResult {
   targetClaimId?: string;
 }
 
+export type CrossAgentClassifyResult =
+  | { op: "ADD" }
+  | { op: "REPLACE"; supersedes: string[] }
+  | { op: "DISPUTE"; conflictingClaimId: string };
+
 export interface ScoredClaim extends Claim {
   score: number;
 }

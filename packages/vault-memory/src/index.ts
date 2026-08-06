@@ -13,10 +13,20 @@ export {
   type EmbedConfig,
   type EmbedFn,
 } from "./embed";
-export { classify } from "./classify";
+export {
+  classify,
+  classifyAgainstOtherAgents,
+  classifyAgainstOwnHistory,
+} from "./classify";
 export { extractFacts, getLatestTurn } from "./extract";
 export { Memory } from "./memory";
-export { applyOp, syncClaimVectorFromRow } from "./ops";
+export { applyCrossAgentResolution, applyOp, syncClaimVectorFromRow } from "./ops";
+export {
+  resolveConflict,
+  strategyForEntity,
+  type Resolution,
+  type ResolutionStrategy,
+} from "./resolve";
 export {
   agentClaimFilter,
   cosineSimilarity,
@@ -45,6 +55,7 @@ export type {
   ClaimStatus,
   ClaimType,
   ClassifyResult,
+  CrossAgentClassifyResult,
   ExtractedFact,
   Message,
   MessageRole,

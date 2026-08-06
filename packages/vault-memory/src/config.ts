@@ -1,5 +1,6 @@
 import type { EmbedConfig } from "./embed";
 import type { VaultDb } from "./db/types";
+import type { ResolutionStrategy } from "./resolve";
 import type { VectorStore } from "./vector-store/types";
 
 export type LLMMessage = {
@@ -21,6 +22,7 @@ export interface LLMConfig {
 export interface MemoryConfig extends LLMConfig, EmbedConfig {
   db: VaultDb;
   vectorStore: VectorStore;
+  entityStrategies?: Partial<Record<string, ResolutionStrategy>>;
 }
 
 export function createDefaultOpenAILLM(
