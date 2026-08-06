@@ -1,6 +1,6 @@
-import type { z } from "zod";
 import type { EmbedConfig } from "./embed";
 import type { VaultDb } from "./db/types";
+import type { VectorStore } from "./vector-store/types";
 
 export type LLMMessage = {
   role: "system" | "user" | "assistant";
@@ -9,7 +9,7 @@ export type LLMMessage = {
 
 export type LLMFn = <T>(params: {
   messages: LLMMessage[];
-  schema: z.ZodType<T>;
+  schema: import("zod").ZodType<T>;
 }) => Promise<T>;
 
 export interface LLMConfig {
@@ -20,6 +20,7 @@ export interface LLMConfig {
 
 export interface MemoryConfig extends LLMConfig, EmbedConfig {
   db: VaultDb;
+  vectorStore: VectorStore;
 }
 
 export function createDefaultOpenAILLM(

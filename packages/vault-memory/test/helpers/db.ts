@@ -2,6 +2,9 @@ import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { claims } from "../../src/db/schema";
 import type { VaultDb } from "../../src/db/types";
+import { MemoryVectorStore } from "../../src/vector-store/memory";
+import type { VectorStore } from "../../src/vector-store/types";
+import { claimRowToVectorMeta } from "../../src/vector-store/utils";
 
 export function createTestDb(): VaultDb {
   const sqlite = new Database(":memory:");
@@ -43,6 +46,10 @@ export function createTestDb(): VaultDb {
   return drizzle(sqlite) as unknown as VaultDb;
 }
 
+export function createTestVectorStore(): MemoryVectorStore {
+  return new MemoryVectorStore();
+}
+
 export function getSqliteDb(db: VaultDb) {
   return db as unknown as ReturnType<typeof drizzle>;
 }
@@ -59,8 +66,9 @@ export async function insertClaim(
     embedding: number[];
     status?: "active" | "superseded" | "disputed";
   },
+  vectorStore?: VectorStore,
 ) {
-  await getSqliteDb(db).insert(claims).values({
+  const values = {
     id: claim.id,
     entity: claim.entity,
     text: claim.text,
@@ -73,7 +81,16 @@ export async function insertClaim(
     embedding: JSON.stringify(claim.embedding),
     createdAt: new Date(),
     lastAccessedAt: null,
-  });
+  };
+
+  await getSqliteDb(db).insert(claims).values(values);
+
+  if (vectorStore && values.status === "active") {
+    await vectorStore.upsert(claim.id, claim.embedding, {
+      ...claimRowToVectorMeta(values),
+      claimId: claim.id,
+    });
+  }
 }
 
 export async function listClaims(db: VaultDb) {

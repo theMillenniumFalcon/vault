@@ -1,12 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import {
-  bruteForceSearch,
   cosineSimilarity,
   parseEmbedding,
   search,
+  searchClaims,
   searchOwnClaims,
 } from "../src/search";
-import { createTestDb, insertClaim } from "./helpers/db";
+import {
+  createTestDb,
+  createTestVectorStore,
+  insertClaim,
+} from "./helpers/db";
 
 describe("cosineSimilarity", () => {
   test("returns 1 for identical vectors", () => {
@@ -38,24 +42,33 @@ describe("parseEmbedding", () => {
 describe("searchOwnClaims", () => {
   test("filters by sourceAgent and active status", async () => {
     const db = createTestDb();
-    await insertClaim(db, {
-      id: "a1",
-      entity: "user.diet",
-      text: "vegetarian",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId: "c1",
-      embedding: [1, 0, 0],
-    });
-    await insertClaim(db, {
-      id: "b1",
-      entity: "user.diet",
-      text: "vegetarian",
-      type: "semantic",
-      sourceAgent: "agent-b",
-      conversationId: "c1",
-      embedding: [1, 0, 0],
-    });
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "a1",
+        entity: "user.diet",
+        text: "vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "c1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+    await insertClaim(
+      db,
+      {
+        id: "b1",
+        entity: "user.diet",
+        text: "vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-b",
+        conversationId: "c1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
     await insertClaim(db, {
       id: "a2",
       entity: "user.diet",
@@ -67,33 +80,48 @@ describe("searchOwnClaims", () => {
       status: "superseded",
     });
 
-    const results = await searchOwnClaims(db, "agent-a", [1, 0, 0], 5);
+    const results = await searchOwnClaims(
+      db,
+      vectorStore,
+      "agent-a",
+      [1, 0, 0],
+      5,
+    );
     expect(results).toHaveLength(1);
     expect(results[0]?.id).toBe("a1");
   });
 
   test("ranks by cosine similarity", async () => {
     const db = createTestDb();
-    await insertClaim(db, {
-      id: "close",
-      entity: "user.location",
-      text: "lives in Berlin",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId: "c1",
-      embedding: [0.9, 0.1, 0],
-    });
-    await insertClaim(db, {
-      id: "far",
-      entity: "user.location",
-      text: "lives in Tokyo",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId: "c1",
-      embedding: [0, 0, 1],
-    });
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "close",
+        entity: "user.location",
+        text: "lives in Berlin",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "c1",
+        embedding: [0.9, 0.1, 0],
+      },
+      vectorStore,
+    );
+    await insertClaim(
+      db,
+      {
+        id: "far",
+        entity: "user.location",
+        text: "lives in Tokyo",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "c1",
+        embedding: [0, 0, 1],
+      },
+      vectorStore,
+    );
 
-    const results = await bruteForceSearch(db, [1, 0, 0], {
+    const results = await searchClaims(db, vectorStore, [1, 0, 0], {
       sourceAgent: "agent-a",
       limit: 2,
     });
@@ -106,18 +134,23 @@ describe("searchOwnClaims", () => {
 describe("search", () => {
   test("embeds query and returns scored claims", async () => {
     const db = createTestDb();
-    await insertClaim(db, {
-      id: "claim-1",
-      entity: "user.diet",
-      text: "The user is vegetarian",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId: "c1",
-      embedding: [1, 0, 0],
-    });
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "claim-1",
+        entity: "user.diet",
+        text: "The user is vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "c1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
 
     const embed = async () => [1, 0, 0];
-    const results = await search(db, embed, "what does the user eat?", {
+    const results = await search(db, vectorStore, embed, "what does the user eat?", {
       limit: 5,
     });
 
@@ -128,27 +161,36 @@ describe("search", () => {
 
   test("filters by conversationId when provided", async () => {
     const db = createTestDb();
-    await insertClaim(db, {
-      id: "c1-claim",
-      entity: "user.job",
-      text: "engineer",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId: "conv-1",
-      embedding: [1, 0],
-    });
-    await insertClaim(db, {
-      id: "c2-claim",
-      entity: "user.job",
-      text: "designer",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId: "conv-2",
-      embedding: [1, 0],
-    });
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "c1-claim",
+        entity: "user.job",
+        text: "engineer",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0],
+      },
+      vectorStore,
+    );
+    await insertClaim(
+      db,
+      {
+        id: "c2-claim",
+        entity: "user.job",
+        text: "designer",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-2",
+        embedding: [1, 0],
+      },
+      vectorStore,
+    );
 
     const embed = async () => [1, 0];
-    const results = await search(db, embed, "job", {
+    const results = await search(db, vectorStore, embed, "job", {
       conversationId: "conv-1",
     });
 

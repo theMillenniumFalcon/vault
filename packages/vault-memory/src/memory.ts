@@ -1,20 +1,18 @@
-import { and, eq } from "drizzle-orm";
 import type { MemoryConfig } from "./config";
 import { claims } from "./db/schema";
-import type { EmbedFn } from "./embed";
 import { resolveEmbed } from "./embed";
 import { classify } from "./classify";
 import { extractFacts } from "./extract";
 import { applyOp } from "./ops";
-import { search as searchClaims, searchOwnClaims } from "./search";
+import {
+  agentClaimFilter,
+  search as searchClaims,
+  searchOwnClaims,
+} from "./search";
 import type { Claim, Message, ScoredClaim, SearchOpts } from "./types";
 
-function agentClaimFilter(claimId: string, agentId: string) {
-  return and(eq(claims.id, claimId), eq(claims.sourceAgent, agentId))!;
-}
-
 export class Memory {
-  private readonly embed: EmbedFn;
+  private readonly embed: ReturnType<typeof resolveEmbed>;
 
   constructor(
     private readonly agentId: string,
@@ -34,6 +32,7 @@ export class Memory {
       const embedding = await this.embed(fact.text);
       const similar = await searchOwnClaims(
         this.config.db,
+        this.config.vectorStore,
         this.agentId,
         embedding,
         5,
@@ -49,6 +48,7 @@ export class Memory {
       results.push(
         await applyOp(
           this.config.db,
+          this.config.vectorStore,
           op,
           fact,
           embedding,
@@ -63,10 +63,16 @@ export class Memory {
   }
 
   async search(query: string, opts?: SearchOpts): Promise<ScoredClaim[]> {
-    return searchClaims(this.config.db, this.embed, query, {
-      ...opts,
-      sourceAgent: opts?.sourceAgent ?? this.agentId,
-    });
+    return searchClaims(
+      this.config.db,
+      this.config.vectorStore,
+      this.embed,
+      query,
+      {
+        ...opts,
+        sourceAgent: opts?.sourceAgent ?? this.agentId,
+      },
+    );
   }
 
   async update(claimId: string, text: string): Promise<void> {
@@ -88,11 +94,20 @@ export class Memory {
         lastAccessedAt: new Date(),
       })
       .where(agentClaimFilter(claimId, this.agentId));
+
+    await this.config.vectorStore.upsert(claimId, embedding, {
+      claimId,
+      sourceAgent: this.agentId,
+      entity: existing[0]!.entity,
+      status: existing[0]!.status,
+      conversationId: existing[0]!.conversationId,
+    });
   }
 
   async delete(claimId: string): Promise<void> {
     await this.config.db
       .delete(claims)
       .where(agentClaimFilter(claimId, this.agentId));
+    await this.config.vectorStore.remove(claimId);
   }
 }

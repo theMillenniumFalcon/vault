@@ -1,24 +1,37 @@
 import { eq } from "drizzle-orm";
 import { claims } from "./db/schema";
 import type { VaultDb } from "./db/types";
-import { rowToClaim } from "./search";
+import { getClaimRow, rowToClaim } from "./search";
 import type { Claim, ClaimOp, ExtractedFact } from "./types";
+import type { VectorStore } from "./vector-store/types";
+import { claimRowToVectorMeta } from "./vector-store/utils";
 
 function newClaimId(): string {
   return crypto.randomUUID();
 }
 
-async function getClaimRow(db: VaultDb, claimId: string) {
-  const rows = await db.select().from(claims).where(eq(claims.id, claimId));
-  const row = rows[0];
-  if (!row) {
-    throw new Error(`Claim not found: ${claimId}`);
+async function indexActiveClaim(
+  vectorStore: VectorStore,
+  claim: Claim,
+  embedding: number[],
+): Promise<void> {
+  if (claim.status !== "active") {
+    await vectorStore.remove(claim.id);
+    return;
   }
-  return row;
+
+  await vectorStore.upsert(claim.id, embedding, {
+    claimId: claim.id,
+    sourceAgent: claim.sourceAgent,
+    entity: claim.entity,
+    status: claim.status,
+    conversationId: claim.conversationId,
+  });
 }
 
 export async function applyOp(
   db: VaultDb,
+  vectorStore: VectorStore,
   op: ClaimOp,
   fact: ExtractedFact,
   embedding: number[],
@@ -53,7 +66,9 @@ export async function applyOp(
       lastAccessedAt: null,
     };
     await db.insert(claims).values(values);
-    return rowToClaim(values);
+    const claim = rowToClaim(values);
+    await indexActiveClaim(vectorStore, claim, embedding);
+    return claim;
   }
 
   if (op === "UPDATE") {
@@ -72,7 +87,9 @@ export async function applyOp(
       })
       .where(eq(claims.id, targetClaimId));
 
-    return rowToClaim(await getClaimRow(db, targetClaimId));
+    const claim = rowToClaim(await getClaimRow(db, targetClaimId));
+    await indexActiveClaim(vectorStore, claim, embedding);
+    return claim;
   }
 
   if (op === "REPLACE") {
@@ -84,6 +101,7 @@ export async function applyOp(
       .update(claims)
       .set({ status: "superseded" })
       .where(eq(claims.id, targetClaimId));
+    await vectorStore.remove(targetClaimId);
 
     const id = newClaimId();
     const values = {
@@ -101,8 +119,23 @@ export async function applyOp(
       lastAccessedAt: null,
     };
     await db.insert(claims).values(values);
-    return rowToClaim(values);
+    const claim = rowToClaim(values);
+    await indexActiveClaim(vectorStore, claim, embedding);
+    return claim;
   }
 
   throw new Error(`Unknown op: ${op}`);
+}
+
+export async function syncClaimVectorFromRow(
+  vectorStore: VectorStore,
+  row: Awaited<ReturnType<typeof getClaimRow>>,
+): Promise<void> {
+  const embedding = row.embedding ? JSON.parse(row.embedding) as number[] : null;
+  if (!embedding || row.status !== "active") {
+    await vectorStore.remove(row.id);
+    return;
+  }
+
+  await vectorStore.upsert(row.id, embedding, claimRowToVectorMeta(row));
 }

@@ -17,6 +17,16 @@
       "types": "./dist/schema.d.ts",
       "import": "./dist/schema.js",
       "require": "./dist/schema.cjs"
+    },
+    "./pg": {
+      "types": "./dist/pg.d.ts",
+      "import": "./dist/pg.js",
+      "require": "./dist/pg.cjs"
+    },
+    "./faiss": {
+      "types": "./dist/faiss.d.ts",
+      "import": "./dist/faiss.js",
+      "require": "./dist/faiss.cjs"
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
@@ -47,7 +57,13 @@
     "publish:public": "npm publish --access public"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.44.0"
+    "drizzle-orm": "^0.44.0",
+    "faiss-node": "^0.5.0"
+  },
+  "peerDependenciesMeta": {
+    "faiss-node": {
+      "optional": true
+    }
   },
   "dependencies": {
     "zod": "^3.24.0"

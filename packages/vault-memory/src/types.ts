@@ -43,4 +43,7 @@ export interface SearchOpts {
   conversationId?: string;
   limit?: number;
   sourceAgent?: string;
+  excludeAgent?: string;
+  entity?: string;
+  status?: ClaimStatus;
 }

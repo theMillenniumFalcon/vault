@@ -16,17 +16,29 @@ export {
 export { classify } from "./classify";
 export { extractFacts, getLatestTurn } from "./extract";
 export { Memory } from "./memory";
-export { applyOp } from "./ops";
+export { applyOp, syncClaimVectorFromRow } from "./ops";
 export {
-  bruteForceSearch,
+  agentClaimFilter,
   cosineSimilarity,
+  getClaimRow,
   parseEmbedding,
   rowToClaim,
   search,
+  searchClaims,
   searchOwnClaims,
   type ClaimRow,
   type VaultDb,
 } from "./search";
+export {
+  MemoryVectorStore,
+  claimRowToVectorMeta,
+  loadActiveClaimVectors,
+  matchesVectorFilter,
+  withActiveFilter,
+  type VectorFilter,
+  type VectorMeta,
+  type VectorStore,
+} from "./vector-store";
 export type {
   Claim,
   ClaimOp,
