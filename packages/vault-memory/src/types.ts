@@ -34,3 +34,13 @@ export interface ClassifyResult {
   op: ClaimOp;
   targetClaimId?: string;
 }
+
+export interface ScoredClaim extends Claim {
+  score: number;
+}
+
+export interface SearchOpts {
+  conversationId?: string;
+  limit?: number;
+  sourceAgent?: string;
+}
