@@ -1,3 +1,6 @@
 plan1.md
 plan2.md
 node_modules
+dist
+*.tgz
+.bun-cache
