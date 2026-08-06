@@ -5,6 +5,7 @@ export {
   type LLMConfig,
   type LLMFn,
   type LLMMessage,
+  type MemoryConfig,
 } from "./config";
 export {
   createDefaultOpenAIEmbed,
@@ -14,6 +15,8 @@ export {
 } from "./embed";
 export { classify } from "./classify";
 export { extractFacts, getLatestTurn } from "./extract";
+export { Memory } from "./memory";
+export { applyOp } from "./ops";
 export {
   bruteForceSearch,
   cosineSimilarity,

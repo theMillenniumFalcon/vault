@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { claims } from "../../src/db/schema";
-import type { VaultDb } from "../../src/search";
+import type { VaultDb } from "../../src/db/types";
 
 export function createTestDb(): VaultDb {
   const sqlite = new Database(":memory:");
@@ -25,6 +25,10 @@ export function createTestDb(): VaultDb {
   return drizzle(sqlite) as unknown as VaultDb;
 }
 
+export function getSqliteDb(db: VaultDb) {
+  return db as unknown as ReturnType<typeof drizzle>;
+}
+
 export async function insertClaim(
   db: VaultDb,
   claim: {
@@ -38,8 +42,7 @@ export async function insertClaim(
     status?: "active" | "superseded" | "disputed";
   },
 ) {
-  const sqliteDb = db as unknown as ReturnType<typeof drizzle>;
-  await sqliteDb.insert(claims).values({
+  await getSqliteDb(db).insert(claims).values({
     id: claim.id,
     entity: claim.entity,
     text: claim.text,
@@ -53,4 +56,8 @@ export async function insertClaim(
     createdAt: new Date(),
     lastAccessedAt: null,
   });
+}
+
+export async function listClaims(db: VaultDb) {
+  return getSqliteDb(db).select().from(claims);
 }

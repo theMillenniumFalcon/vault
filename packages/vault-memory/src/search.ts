@@ -1,17 +1,10 @@
 import { and, eq, type SQL } from "drizzle-orm";
 import { claims } from "./db/schema";
+import type { ClaimRow, VaultDb } from "./db/types";
 import type { EmbedFn } from "./embed";
 import type { Claim, ScoredClaim, SearchOpts } from "./types";
 
-export type ClaimRow = typeof claims.$inferSelect;
-
-export type VaultDb = {
-  select(): {
-    from(table: typeof claims): {
-      where(condition: SQL): Promise<ClaimRow[]>;
-    };
-  };
-};
+export type { ClaimRow, VaultDb } from "./db/types";
 
 export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length || a.length === 0) return 0;

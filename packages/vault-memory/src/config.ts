@@ -1,4 +1,6 @@
 import type { z } from "zod";
+import type { EmbedConfig } from "./embed";
+import type { VaultDb } from "./db/types";
 
 export type LLMMessage = {
   role: "system" | "user" | "assistant";
@@ -14,6 +16,10 @@ export interface LLMConfig {
   llm?: LLMFn;
   apiKey?: string;
   model?: string;
+}
+
+export interface MemoryConfig extends LLMConfig, EmbedConfig {
+  db: VaultDb;
 }
 
 export function createDefaultOpenAILLM(
