@@ -6,6 +6,7 @@ import {
   createTestDb,
   insertClaim,
   listClaims,
+  syncVectorIndex,
 } from "./helpers";
 
 const conversationId = "regression-session";
@@ -40,7 +41,8 @@ describe("cli-agent regression", () => {
       async () => ({ op: "ADD" }),
     ]);
 
-    const memory = createMemory(db, llm);
+    const { memory, vectorStore } = createMemory(db, llm);
+    await syncVectorIndex(vectorStore, db);
     const { added } = await memory.add(
       [{ role: "user", content: "I'm vegetarian" }],
       conversationId,
@@ -53,16 +55,6 @@ describe("cli-agent regression", () => {
 
   test("REPLACEs on contradiction instead of duplicating", async () => {
     const db = createTestDb();
-    await insertClaim(db, {
-      id: "claim-old",
-      entity: "user.diet",
-      text: "The user is vegetarian",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId,
-      embedding: [1, 0, 0],
-    });
-
     const llm = routingLlm([
       async () => ({
         facts: [
@@ -79,7 +71,22 @@ describe("cli-agent regression", () => {
       }),
     ]);
 
-    const memory = createMemory(db, llm);
+    const { memory, vectorStore } = createMemory(db, llm);
+    await insertClaim(
+      db,
+      {
+        id: "claim-old",
+        entity: "user.diet",
+        text: "The user is vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId,
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+    await syncVectorIndex(vectorStore, db);
+
     const { added } = await memory.add(
       [{ role: "user", content: "Actually I eat meat now" }],
       conversationId,
@@ -96,16 +103,6 @@ describe("cli-agent regression", () => {
 
   test("NOOP on restated fact does not bloat the table", async () => {
     const db = createTestDb();
-    await insertClaim(db, {
-      id: "claim-1",
-      entity: "user.diet",
-      text: "The user is vegetarian",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId,
-      embedding: [1, 0, 0],
-    });
-
     const llm = routingLlm([
       async () => ({
         facts: [
@@ -122,7 +119,22 @@ describe("cli-agent regression", () => {
       }),
     ]);
 
-    const memory = createMemory(db, llm);
+    const { memory, vectorStore } = createMemory(db, llm);
+    await insertClaim(
+      db,
+      {
+        id: "claim-1",
+        entity: "user.diet",
+        text: "The user is vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId,
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+    await syncVectorIndex(vectorStore, db);
+
     const { added } = await memory.add(
       [{ role: "user", content: "As I said, I'm vegetarian" }],
       conversationId,
@@ -138,25 +150,6 @@ describe("cli-agent regression", () => {
     const dietVector = [1, 0, 0];
     const jobVector = [0, 1, 0];
 
-    await insertClaim(db, {
-      id: "diet-claim",
-      entity: "user.diet",
-      text: "The user is vegetarian",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId,
-      embedding: dietVector,
-    });
-    await insertClaim(db, {
-      id: "job-claim",
-      entity: "user.job",
-      text: "The user is a software engineer",
-      type: "semantic",
-      sourceAgent: "agent-a",
-      conversationId,
-      embedding: jobVector,
-    });
-
     const semanticQuery = "what food preferences does the user have";
     const embed: import("vault-memory").EmbedFn = async (text) => {
       if (text === "The user is vegetarian") return dietVector;
@@ -166,7 +159,36 @@ describe("cli-agent regression", () => {
     };
 
     const llm: LLMFn = async ({ schema }) => schema.parse({ facts: [] });
-    const memory = createMemory(db, llm, embed);
+    const { memory, vectorStore } = createMemory(db, llm, embed);
+
+    await insertClaim(
+      db,
+      {
+        id: "diet-claim",
+        entity: "user.diet",
+        text: "The user is vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId,
+        embedding: dietVector,
+      },
+      vectorStore,
+    );
+    await insertClaim(
+      db,
+      {
+        id: "job-claim",
+        entity: "user.job",
+        text: "The user is a software engineer",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId,
+        embedding: jobVector,
+      },
+      vectorStore,
+    );
+    await syncVectorIndex(vectorStore, db);
+
     const results = await memory.search(semanticQuery);
 
     expect(results.length).toBeGreaterThan(0);

@@ -1,10 +1,13 @@
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
-import { Memory, type Message } from "vault-memory";
-import { createDb } from "./db";
+import { claims } from "vault-memory/schema";
+import { eq } from "drizzle-orm";
+import type { Message } from "vault-memory";
+import { createAgentMemory, syncVectorIndex } from "./memory-setup";
+import { createDb, getDrizzleDb } from "./db";
 
-const AGENT_ID = "agent-a";
-const CONVERSATION_ID = "cli-session";
+const AGENT_ID = process.env.AGENT_ID ?? "agent-a";
+const CONVERSATION_ID = process.env.VAULT_CONVERSATION_ID ?? "cli-session";
 const DB_PATH = process.env.VAULT_DB_PATH ?? "vault.db";
 
 async function main() {
@@ -15,12 +18,17 @@ async function main() {
   }
 
   const db = createDb(DB_PATH);
-  const memory = new Memory(AGENT_ID, { db, apiKey });
+  const { memory, vectorStore } = createAgentMemory(AGENT_ID, db, { apiKey });
+  await syncVectorIndex(vectorStore, db);
+
   const messages: Message[] = [];
 
-  console.log("Vault CLI agent (agent-a)");
+  console.log(`Vault CLI agent (${AGENT_ID})`);
   console.log(`Database: ${DB_PATH}`);
-  console.log("Commands: /search <query>, /quit");
+  console.log("Commands: /search <query>, /claims, /quit");
+  console.log(
+    "Multi-agent: run a second terminal with AGENT_ID=agent-b and the same VAULT_DB_PATH.",
+  );
   console.log("");
 
   const rl = createInterface({ input, output });
@@ -41,13 +49,29 @@ async function main() {
           continue;
         }
 
+        await syncVectorIndex(vectorStore, db);
         const results = await memory.search(query);
         if (results.length === 0) {
           console.log("No matching memories.");
         } else {
           for (const result of results) {
             console.log(
-              `- [${result.score.toFixed(3)}] ${result.text} (${result.entity})`,
+              `- [${result.score.toFixed(3)}] ${result.text} (${result.entity}, ${result.sourceAgent}, ${result.status})`,
+            );
+          }
+        }
+        continue;
+      }
+
+      if (line === "/claims") {
+        await syncVectorIndex(vectorStore, db);
+        const rows = await getDrizzleDb(db).select().from(claims);
+        if (rows.length === 0) {
+          console.log("No claims in store.");
+        } else {
+          for (const row of rows) {
+            console.log(
+              `- [${row.status}] ${row.sourceAgent}: ${row.text} (${row.entity})`,
             );
           }
         }
@@ -55,6 +79,7 @@ async function main() {
       }
 
       messages.push({ role: "user", content: line });
+      await syncVectorIndex(vectorStore, db);
       const { added } = await memory.add(messages, CONVERSATION_ID);
 
       if (added.length === 0) {
@@ -62,7 +87,9 @@ async function main() {
       } else {
         console.log("Assistant: Noted. Stored:");
         for (const claim of added) {
-          console.log(`  - ${claim.text}`);
+          console.log(
+            `  - [${claim.status}] ${claim.text} (${claim.entity})`,
+          );
         }
       }
 

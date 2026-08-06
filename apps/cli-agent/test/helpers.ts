@@ -1,12 +1,19 @@
 import { Database } from "bun:sqlite";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
-import { claims, Memory, type EmbedFn, type LLMFn, type VaultDb } from "vault-memory";
+import {
+  claims,
+  type EmbedFn,
+  type LLMFn,
+  type VaultDb,
+} from "vault-memory";
+import { claimRowToVectorMeta } from "vault-memory";
+import { createAgentMemory, syncVectorIndex } from "../src/memory-setup";
 
 const AGENT_ID = "agent-a";
 const CONVERSATION_ID = "regression-session";
 
-const CREATE_CLAIMS_TABLE = `
+const CREATE_TABLES = `
   CREATE TABLE claims (
     id TEXT PRIMARY KEY,
     entity TEXT NOT NULL,
@@ -20,12 +27,30 @@ const CREATE_CLAIMS_TABLE = `
     embedding TEXT,
     created_at INTEGER NOT NULL,
     last_accessed_at INTEGER
-  )
+  );
+
+  CREATE TABLE agent_authority (
+    id TEXT PRIMARY KEY,
+    entity TEXT NOT NULL,
+    agent_id TEXT NOT NULL,
+    weight REAL NOT NULL
+  );
+
+  CREATE TABLE disputes (
+    id TEXT PRIMARY KEY,
+    claim_a_id TEXT NOT NULL,
+    claim_b_id TEXT NOT NULL,
+    entity TEXT NOT NULL,
+    resolved_op TEXT,
+    resolution_strategy TEXT,
+    created_at INTEGER NOT NULL,
+    resolved_at INTEGER
+  );
 `;
 
 export function createTestDb(): VaultDb {
   const sqlite = new Database(":memory:");
-  sqlite.exec(CREATE_CLAIMS_TABLE);
+  sqlite.exec(CREATE_TABLES);
   return drizzle(sqlite) as unknown as VaultDb;
 }
 
@@ -49,8 +74,9 @@ export async function insertClaim(
     embedding: number[];
     status?: "active" | "superseded" | "disputed";
   },
+  vectorStore?: ReturnType<typeof createAgentMemory>["vectorStore"],
 ) {
-  await getSqliteDb(db).insert(claims).values({
+  const values = {
     id: claim.id,
     entity: claim.entity,
     text: claim.text,
@@ -63,7 +89,16 @@ export async function insertClaim(
     embedding: JSON.stringify(claim.embedding),
     createdAt: new Date(),
     lastAccessedAt: null,
-  });
+  };
+
+  await getSqliteDb(db).insert(claims).values(values);
+
+  if (vectorStore && values.status === "active") {
+    await vectorStore.upsert(claim.id, claim.embedding, {
+      ...claimRowToVectorMeta(values),
+      claimId: claim.id,
+    });
+  }
 }
 
 export function createMemory(
@@ -71,7 +106,8 @@ export function createMemory(
   llm: LLMFn,
   embed: EmbedFn = async () => [1, 0, 0],
 ) {
-  return new Memory(AGENT_ID, { db, llm, embed });
+  const { memory, vectorStore } = createAgentMemory(AGENT_ID, db, { llm, embed });
+  return { memory, vectorStore };
 }
 
 export async function countActiveClaims(db: VaultDb) {
@@ -81,3 +117,5 @@ export async function countActiveClaims(db: VaultDb) {
     .where(eq(claims.status, "active"));
   return rows.length;
 }
+
+export { AGENT_ID, CONVERSATION_ID, syncVectorIndex };
