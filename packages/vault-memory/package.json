@@ -1,0 +1,17 @@
+{
+  "name": "vault-memory",
+  "version": "0.1.0",
+  "description": "Agent-attributed memory layer for AI agents — single-agent now, multi-agent conflict resolution in the roadmap.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/db/schema.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.0",
+    "zod": "^3.24.0"
+  }
+}
