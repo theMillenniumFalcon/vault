@@ -242,7 +242,7 @@ describe("Memory two-pass classification", () => {
 
     const rows = await listClaims(db);
     expect(rows.find((row) => row.id === "agent-a-claim")?.status).toBe(
-      "disputed",
+      "active",
     );
   });
 });

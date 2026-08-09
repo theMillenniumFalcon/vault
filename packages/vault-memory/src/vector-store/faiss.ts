@@ -1,33 +1,44 @@
-import type { IndexIDMap2 } from "faiss-node";
+import type { IndexFlatIP, IndexIDMap2 } from "faiss-node";
 import type { VaultDb } from "../db/types";
 import { loadActiveClaimVectors } from "./rebuild";
 import type { VectorFilter, VectorMeta, VectorStore } from "./types";
 import { withActiveFilter } from "./utils";
 
+export type FaissBindings = {
+  IndexFlatIP: new (dimensions: number) => IndexFlatIP;
+  IndexIDMap2: new (index: IndexFlatIP) => IndexIDMap2;
+};
+
 export type FaissVectorStoreOptions = {
   dimensions: number;
+  /** Inject bindings (tests / pure-JS shims). Defaults to dynamic `faiss-node` import. */
+  faiss?: FaissBindings;
 };
 
 export class FaissVectorStore implements VectorStore {
   private readonly dimensions: number;
+  private readonly faiss: FaissBindings | undefined;
   private index: IndexIDMap2 | null = null;
   private readonly metaById = new Map<string, VectorMeta>();
   private readonly faissIdToClaimId = new Map<bigint, string>();
 
   constructor(options: FaissVectorStoreOptions) {
     this.dimensions = options.dimensions;
+    this.faiss = options.faiss;
   }
 
   private async getIndex(): Promise<IndexIDMap2> {
     if (this.index) return this.index;
 
-    let faiss: typeof import("faiss-node");
-    try {
-      faiss = await import("faiss-node");
-    } catch {
-      throw new Error(
-        "FaissVectorStore requires the optional peer dependency faiss-node. Install it with: npm install faiss-node",
-      );
+    let faiss = this.faiss;
+    if (!faiss) {
+      try {
+        faiss = await import("faiss-node");
+      } catch {
+        throw new Error(
+          "FaissVectorStore requires the optional peer dependency faiss-node. Install it with: npm install faiss-node",
+        );
+      }
     }
 
     const baseIndex = new faiss.IndexFlatIP(this.dimensions);

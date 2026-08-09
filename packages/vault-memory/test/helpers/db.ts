@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
-import { agentAuthority, claims } from "../../src/db/schema";
+import { agentAuthority, claims, disputes } from "../../src/db/schema";
 import type { VaultDb } from "../../src/db/types";
 import type { AuthoritySeed } from "../../src/resolve";
 import { MemoryVectorStore } from "../../src/vector-store/memory";
@@ -107,4 +107,8 @@ export async function insertAuthority(db: VaultDb, seeds: AuthoritySeed[]) {
       weight: seed.weight,
     });
   }
+}
+
+export async function listDisputes(db: VaultDb) {
+  return getSqliteDb(db).select().from(disputes);
 }

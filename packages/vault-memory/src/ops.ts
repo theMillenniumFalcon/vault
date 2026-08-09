@@ -200,11 +200,10 @@ export async function applyCrossAgentResolution(
     lastAccessedAt: null,
   };
 
+  // Loser is stored as disputed and not indexed. The existing claim stays
+  // active/searchable so higher-authority memory remains the answer until
+  // an explicit resolution updates the dispute row.
   await db.insert(claims).values(values);
-  await db
-    .update(claims)
-    .set({ status: "disputed" })
-    .where(eq(claims.id, resolution.conflictingClaimId));
 
   const dispute: DisputeInsert = {
     id: crypto.randomUUID(),
@@ -212,13 +211,12 @@ export async function applyCrossAgentResolution(
     claimBId: resolution.conflictingClaimId,
     entity: fact.entity,
     resolvedOp: null,
-    resolutionStrategy: null,
+    resolutionStrategy: "authority",
     createdAt: now,
     resolvedAt: null,
   };
   await db.insert(disputes).values(dispute);
 
-  await vectorStore.remove(resolution.conflictingClaimId);
   return rowToClaim(values);
 }
 
