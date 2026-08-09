@@ -4,10 +4,12 @@ import {
   classifyAgainstOwnHistory,
 } from "../src/classify";
 import type { LLMFn, MemoryConfig } from "../src/config";
+import { EXAMPLE_AUTHORITY_SEED } from "../src/resolve";
 import type { ExtractedFact } from "../src/types";
 import {
   createTestDb,
   createTestVectorStore,
+  insertAuthority,
   insertClaim,
 } from "./helpers/db";
 
@@ -158,5 +160,79 @@ describe("classifyAgainstOtherAgents", () => {
     );
 
     expect(result).toEqual({ op: "ADD" });
+  });
+
+  test("authority strategy: higher-weighted agent REPLACE", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "agent-b-claim",
+        entity: "user.timezone",
+        text: "The user is in EST",
+        type: "semantic",
+        sourceAgent: "agent-b",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+    await insertAuthority(db, EXAMPLE_AUTHORITY_SEED);
+
+    const config = createConfig(async ({ schema }) => schema.parse({ op: "ADD" }), {
+      db,
+      vectorStore,
+      entityStrategies: { "user.timezone": "authority" },
+    });
+
+    const result = await classifyAgainstOtherAgents(
+      { ...fact, text: "The user is in PST" },
+      "agent-a",
+      [1, 0, 0],
+      config,
+    );
+
+    expect(result).toEqual({
+      op: "REPLACE",
+      supersedes: ["agent-b-claim"],
+    });
+  });
+
+  test("authority strategy: lower-weighted agent DISPUTE", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "agent-a-claim",
+        entity: "user.timezone",
+        text: "The user is in PST",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+    await insertAuthority(db, EXAMPLE_AUTHORITY_SEED);
+
+    const config = createConfig(async ({ schema }) => schema.parse({ op: "ADD" }), {
+      db,
+      vectorStore,
+      entityStrategies: { "user.timezone": "authority" },
+    });
+
+    const result = await classifyAgainstOtherAgents(
+      fact,
+      "agent-b",
+      [1, 0, 0],
+      config,
+    );
+
+    expect(result).toEqual({
+      op: "DISPUTE",
+      conflictingClaimId: "agent-a-claim",
+    });
   });
 });

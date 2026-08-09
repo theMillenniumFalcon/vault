@@ -22,8 +22,13 @@ export { extractFacts, getLatestTurn } from "./extract";
 export { Memory } from "./memory";
 export { applyCrossAgentResolution, applyOp, syncClaimVectorFromRow } from "./ops";
 export {
+  EXAMPLE_AUTHORITY_SEED,
+  entityMatchesPattern,
+  getAuthority,
   resolveConflict,
+  seedAuthority,
   strategyForEntity,
+  type AuthoritySeed,
   type Resolution,
   type ResolutionStrategy,
 } from "./resolve";

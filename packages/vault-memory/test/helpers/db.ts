@@ -1,7 +1,8 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
-import { claims } from "../../src/db/schema";
+import { agentAuthority, claims } from "../../src/db/schema";
 import type { VaultDb } from "../../src/db/types";
+import type { AuthoritySeed } from "../../src/resolve";
 import { MemoryVectorStore } from "../../src/vector-store/memory";
 import type { VectorStore } from "../../src/vector-store/types";
 import { claimRowToVectorMeta } from "../../src/vector-store/utils";
@@ -95,4 +96,15 @@ export async function insertClaim(
 
 export async function listClaims(db: VaultDb) {
   return getSqliteDb(db).select().from(claims);
+}
+
+export async function insertAuthority(db: VaultDb, seeds: AuthoritySeed[]) {
+  for (const seed of seeds) {
+    await getSqliteDb(db).insert(agentAuthority).values({
+      id: crypto.randomUUID(),
+      entity: seed.entity,
+      agentId: seed.agentId,
+      weight: seed.weight,
+    });
+  }
 }

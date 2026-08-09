@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import type { LLMFn } from "../src/config";
+import type { LLMFn, MemoryConfig } from "../src/config";
 import type { EmbedFn } from "../src/embed";
 import { Memory } from "../src/memory";
+import { EXAMPLE_AUTHORITY_SEED } from "../src/resolve";
 import type { VectorStore } from "../src/vector-store/types";
 import {
   createTestDb,
   createTestVectorStore,
+  insertAuthority,
   insertClaim,
   listClaims,
 } from "./helpers/db";
@@ -16,8 +18,9 @@ function createMemory(
   agentId: string,
   llm: LLMFn,
   embed: EmbedFn = async () => [1, 0, 0],
+  overrides: Partial<MemoryConfig> = {},
 ) {
-  return new Memory(agentId, { db, vectorStore, llm, embed });
+  return new Memory(agentId, { db, vectorStore, llm, embed, ...overrides });
 }
 
 describe("Memory two-pass classification", () => {
@@ -135,5 +138,111 @@ describe("Memory two-pass classification", () => {
 
     const otherClaim = (await listClaims(db)).find((row) => row.id === "other-claim");
     expect(otherClaim?.status).toBe("active");
+  });
+
+  test("authority strategy: higher-weighted agent supersedes", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    await insertAuthority(db, EXAMPLE_AUTHORITY_SEED);
+    await insertClaim(
+      db,
+      {
+        id: "agent-b-claim",
+        entity: "user.timezone",
+        text: "The user is in EST",
+        type: "semantic",
+        sourceAgent: "agent-b",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+
+    let call = 0;
+    const llm: LLMFn = async ({ schema }) => {
+      call += 1;
+      if (call === 1) {
+        return schema.parse({
+          facts: [
+            {
+              entity: "user.timezone",
+              text: "The user is in PST",
+              type: "semantic",
+            },
+          ],
+        });
+      }
+      return schema.parse({ op: "ADD" });
+    };
+
+    const memory = createMemory(db, vectorStore, "agent-a", llm, undefined, {
+      entityStrategies: { "user.timezone": "authority" },
+    });
+    const { added } = await memory.add(
+      [{ role: "user", content: "I'm in PST" }],
+      "conv-1",
+    );
+
+    expect(added).toHaveLength(1);
+    expect(added[0]?.status).toBe("active");
+    expect(added[0]?.sourceAgent).toBe("agent-a");
+
+    const rows = await listClaims(db);
+    expect(rows.find((row) => row.id === "agent-b-claim")?.status).toBe(
+      "superseded",
+    );
+  });
+
+  test("authority strategy: lower-weighted agent creates dispute", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    await insertAuthority(db, EXAMPLE_AUTHORITY_SEED);
+    await insertClaim(
+      db,
+      {
+        id: "agent-a-claim",
+        entity: "user.timezone",
+        text: "The user is in PST",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+
+    let call = 0;
+    const llm: LLMFn = async ({ schema }) => {
+      call += 1;
+      if (call === 1) {
+        return schema.parse({
+          facts: [
+            {
+              entity: "user.timezone",
+              text: "The user is in EST",
+              type: "semantic",
+            },
+          ],
+        });
+      }
+      return schema.parse({ op: "ADD" });
+    };
+
+    const memory = createMemory(db, vectorStore, "agent-b", llm, undefined, {
+      entityStrategies: { "user.timezone": "authority" },
+    });
+    const { added } = await memory.add(
+      [{ role: "user", content: "I'm in EST" }],
+      "conv-1",
+    );
+
+    expect(added).toHaveLength(1);
+    expect(added[0]?.status).toBe("disputed");
+    expect(added[0]?.sourceAgent).toBe("agent-b");
+
+    const rows = await listClaims(db);
+    expect(rows.find((row) => row.id === "agent-a-claim")?.status).toBe(
+      "disputed",
+    );
   });
 });
