@@ -8,6 +8,8 @@
     "release": "bun run build --filter=vault-memory && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.0"
+    "@changesets/cli": "^2.29.0",
+    "@tailwindcss/typography": "^0.5.20",
+    "web": "workspace:*"
   }
 }
