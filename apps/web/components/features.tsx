@@ -198,9 +198,9 @@ export const Features = () => (
               </Heading>
               <CardDescription>{feature.description}</CardDescription>
             </CardContent>
-            <CardFooter>
+              <CardFooter>
               <CodeSnippet code={feature.snippet} />
-            </CardFooter>
+              </CardFooter>
           </Card>
         );
       })}
@@ -272,19 +272,19 @@ export const Features = () => (
       </Card>
 
       <Card className="gap-4">
-        <CardContent>
-          <IconBox variant="static" className="mb-4 w-fit">
+            <CardContent>
+              <IconBox variant="static" className="mb-4 w-fit">
             <Archive className="h-4 w-4" />
-          </IconBox>
-          <CardHeader>
+              </IconBox>
+              <CardHeader>
             <CardTitle>{attributionFeature.eyebrow}</CardTitle>
-          </CardHeader>
-          <Heading as="h3" size="h4" className="mb-2">
+              </CardHeader>
+              <Heading as="h3" size="h4" className="mb-2">
             {attributionFeature.title}
-          </Heading>
+              </Heading>
           <CardDescription>{attributionFeature.description}</CardDescription>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
     </div>
   </div>
 );

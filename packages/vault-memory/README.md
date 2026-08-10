@@ -90,6 +90,8 @@ await memory.delete(claimId);                // remove claim
 - **v0.1 (now):** Single-agent memory with ADD / UPDATE / REPLACE / NOOP and semantic search
 - **Future:** Multi-agent conflict resolution using the `sourceAgent` and `disputed` status fields already in the schema
 
+See **[docs/multi-agent-conflict.md](./docs/multi-agent-conflict.md)** for how multi-agent conflict resolution works today (two-pass classifier, recency vs authority, disputes).
+
 ## License
 
 MIT
