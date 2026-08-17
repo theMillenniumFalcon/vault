@@ -1,4 +1,5 @@
 import { and, eq, inArray, type SQL } from "drizzle-orm";
+import { recencyWeightedScore } from "./decay";
 import { claims } from "./db/schema";
 import type { ClaimRow, VaultDb } from "./db/types";
 import type { EmbedFn } from "./embed";
@@ -42,16 +43,31 @@ async function hydrateScoredClaims(
     .where(inArray(claims.id, ids));
   const rowById = new Map(rows.map((row) => [row.id, row]));
 
-  return hits
+  const scored = hits
     .map((hit) => {
       const row = rowById.get(hit.claimId);
       if (!row) return null;
+      const claim = rowToClaim(row);
       return {
-        ...rowToClaim(row),
-        score: hit.score,
+        ...claim,
+        score: recencyWeightedScore(claim, hit.score),
       };
     })
     .filter((claim): claim is ScoredClaim => claim !== null);
+
+  return scored.sort((a, b) => b.score - a.score);
+}
+
+async function touchLastAccessedAt(
+  db: VaultDb,
+  claimIds: string[],
+): Promise<void> {
+  if (claimIds.length === 0) return;
+  const now = new Date();
+  await db
+    .update(claims)
+    .set({ lastAccessedAt: now })
+    .where(inArray(claims.id, claimIds));
 }
 
 export async function searchClaims(
@@ -70,7 +86,12 @@ export async function searchClaims(
   });
 
   const hits = await vectorStore.search(queryEmbedding, { limit, filter });
-  return hydrateScoredClaims(db, hits);
+  const results = await hydrateScoredClaims(db, hits);
+  await touchLastAccessedAt(
+    db,
+    results.map((claim) => claim.id),
+  );
+  return results;
 }
 
 export async function searchOwnClaims(

@@ -32,6 +32,7 @@ export {
   type Resolution,
   type ResolutionStrategy,
 } from "./resolve";
+export { recencyWeightedScore } from "./decay";
 export {
   agentClaimFilter,
   cosineSimilarity,
