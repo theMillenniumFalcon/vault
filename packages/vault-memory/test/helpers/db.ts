@@ -3,9 +3,12 @@ import { drizzle } from "drizzle-orm/bun-sqlite";
 import { agentAuthority, claims, disputes } from "../../src/db/schema";
 import type { VaultDb } from "../../src/db/types";
 import type { AuthoritySeed } from "../../src/resolve";
-import { MemoryVectorStore } from "../../src/vector-store/memory";
+import { FaissVectorStore } from "../../src/vector-store/faiss";
 import type { VectorStore } from "../../src/vector-store/types";
 import { claimRowToVectorMeta } from "../../src/vector-store/utils";
+import { createPureJsFaiss } from "./pure-js-faiss";
+
+export const TEST_EMBEDDING_DIMENSIONS = 3;
 
 export function createTestDb(): VaultDb {
   const sqlite = new Database(":memory:");
@@ -47,8 +50,11 @@ export function createTestDb(): VaultDb {
   return drizzle(sqlite) as unknown as VaultDb;
 }
 
-export function createTestVectorStore(): MemoryVectorStore {
-  return new MemoryVectorStore();
+export function createTestVectorStore(): FaissVectorStore {
+  return new FaissVectorStore({
+    dimensions: TEST_EMBEDDING_DIMENSIONS,
+    faiss: createPureJsFaiss(),
+  });
 }
 
 export function getSqliteDb(db: VaultDb) {

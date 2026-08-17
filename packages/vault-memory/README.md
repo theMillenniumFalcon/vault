@@ -10,7 +10,7 @@ Agent-attributed memory layer for AI agents — extract, store, retrieve, and de
 npm install vault-memory drizzle-orm better-sqlite3
 ```
 
-You bring your own Drizzle database driver (`better-sqlite3`, `bun:sqlite`, `postgres.js`, etc.). `drizzle-orm` is a peer dependency.
+`faiss-node` is installed automatically as a dependency of `vault-memory` for FAISS vector search. You bring your own Drizzle database driver (`better-sqlite3`, `bun:sqlite`, `postgres.js`, etc.). `drizzle-orm` is a peer dependency.
 
 ## Quickstart
 
@@ -64,11 +64,14 @@ import { claims } from "vault-memory/schema";
 ```typescript
 interface MemoryConfig {
   db: VaultDb;           // your Drizzle instance — any SQLite/Postgres driver
+  vectorStore?: VectorStore; // defaults to FaissVectorStore (FAISS)
+  vectorDimensions?: number; // for default FAISS index; default 1536 (text-embedding-3-small)
   embed?: EmbedFn;       // defaults to OpenAI text-embedding-3-small when apiKey is set
   llm?: LLMFn;           // defaults to OpenAI gpt-4o-mini when apiKey is set
   apiKey?: string;       // convenience: builds default embed + llm if not overridden
   model?: string;        // override default chat model
   embeddingModel?: string; // override default embedding model
+  entityStrategies?: Partial<Record<string, ResolutionStrategy>>;
 }
 ```
 

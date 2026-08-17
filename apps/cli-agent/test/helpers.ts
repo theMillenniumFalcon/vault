@@ -3,15 +3,25 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import {
   claims,
+  FaissVectorStore,
   type EmbedFn,
   type LLMFn,
   type VaultDb,
 } from "vault-memory";
 import { claimRowToVectorMeta } from "vault-memory";
 import { createAgentMemory, syncVectorIndex } from "../src/memory-setup";
+import { createPureJsFaiss } from "./pure-js-faiss";
 
 const AGENT_ID = "agent-a";
 const CONVERSATION_ID = "regression-session";
+const TEST_VECTOR_DIMENSIONS = 3;
+
+export function createTestVectorStore() {
+  return new FaissVectorStore({
+    dimensions: TEST_VECTOR_DIMENSIONS,
+    faiss: createPureJsFaiss(),
+  });
+}
 
 const CREATE_TABLES = `
   CREATE TABLE claims (
@@ -106,7 +116,13 @@ export function createMemory(
   llm: LLMFn,
   embed: EmbedFn = async () => [1, 0, 0],
 ) {
-  const { memory, vectorStore } = createAgentMemory(AGENT_ID, db, { llm, embed });
+  const vectorStore = createTestVectorStore();
+  const { memory } = createAgentMemory(AGENT_ID, db, {
+    llm,
+    embed,
+    vectorDimensions: TEST_VECTOR_DIMENSIONS,
+    vectorStore,
+  });
   return { memory, vectorStore };
 }
 

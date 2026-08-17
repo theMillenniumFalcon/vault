@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import type { MemoryConfig } from "./config";
+import type { MemoryConfig, ResolvedMemoryConfig } from "./config";
 import { agentAuthority } from "./db/schema";
 import type { VaultDb } from "./db/types";
 import type { CrossAgentClassifyResult, ExtractedFact, ScoredClaim } from "./types";
@@ -41,7 +41,7 @@ export async function resolveConflict(
   agentId: string,
   conflicts: ScoredClaim[],
   strategy: ResolutionStrategy,
-  config: MemoryConfig,
+  config: ResolvedMemoryConfig,
 ): Promise<Resolution> {
   switch (strategy) {
     case "recency":
@@ -64,7 +64,7 @@ async function resolveAuthority(
   fact: ExtractedFact,
   agentId: string,
   conflicts: ScoredClaim[],
-  config: MemoryConfig,
+  config: ResolvedMemoryConfig,
 ): Promise<Resolution> {
   if (conflicts.length === 0) {
     return { op: "ADD" };

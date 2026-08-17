@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "bun run src/index.ts",
+    "start:agent-a": "bun run src/agent-a.ts",
+    "start:agent-b": "bun run src/agent-b.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

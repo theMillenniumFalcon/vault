@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { MemoryConfig } from "../src/config";
+import type { MemoryConfig, ResolvedMemoryConfig } from "../src/config";
+import { resolveMemoryConfig } from "../src/config";
 import {
   EXAMPLE_AUTHORITY_SEED,
   entityMatchesPattern,
@@ -36,13 +37,13 @@ function scoredClaim(
   };
 }
 
-function createConfig(overrides: Partial<MemoryConfig> = {}): MemoryConfig {
-  return {
+function createConfig(overrides: Partial<MemoryConfig> = {}): ResolvedMemoryConfig {
+  return resolveMemoryConfig({
     db: createTestDb(),
     vectorStore: createTestVectorStore(),
     llm: async ({ schema }) => schema.parse({}),
     ...overrides,
-  };
+  });
 }
 
 describe("strategyForEntity", () => {

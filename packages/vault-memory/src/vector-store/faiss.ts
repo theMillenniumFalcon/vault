@@ -36,7 +36,7 @@ export class FaissVectorStore implements VectorStore {
         faiss = await import("faiss-node");
       } catch {
         throw new Error(
-          "FaissVectorStore requires the optional peer dependency faiss-node. Install it with: npm install faiss-node",
+          "FaissVectorStore requires faiss-node. Install it with: npm install faiss-node",
         );
       }
     }
@@ -136,6 +136,14 @@ export class FaissVectorStore implements VectorStore {
 }
 
 function claimIdToFaissId(claimId: string): bigint {
-  const hex = claimId.replace(/-/g, "").slice(0, 16);
-  return BigInt(`0x${hex}`);
+  const hex = claimId.replace(/-/g, "");
+  if (/^[0-9a-f]+$/i.test(hex) && hex.length >= 16) {
+    return BigInt(`0x${hex.slice(0, 16)}`);
+  }
+  let hash = 0xcbf29ce484222325n;
+  for (let i = 0; i < claimId.length; i++) {
+    hash ^= BigInt(claimId.charCodeAt(i));
+    hash = (hash * 0x100000001b3n) & 0xffffffffffffffffn;
+  }
+  return hash;
 }

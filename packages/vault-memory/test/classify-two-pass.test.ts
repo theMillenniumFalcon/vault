@@ -3,7 +3,8 @@ import {
   classifyAgainstOtherAgents,
   classifyAgainstOwnHistory,
 } from "../src/classify";
-import type { LLMFn, MemoryConfig } from "../src/config";
+import type { LLMFn, MemoryConfig, ResolvedMemoryConfig } from "../src/config";
+import { resolveMemoryConfig } from "../src/config";
 import { EXAMPLE_AUTHORITY_SEED } from "../src/resolve";
 import type { ExtractedFact } from "../src/types";
 import {
@@ -22,13 +23,13 @@ const fact: ExtractedFact = {
 function createConfig(
   llm: LLMFn,
   overrides: Partial<MemoryConfig> = {},
-): MemoryConfig {
-  return {
+): ResolvedMemoryConfig {
+  return resolveMemoryConfig({
     db: createTestDb(),
     vectorStore: createTestVectorStore(),
     llm,
     ...overrides,
-  };
+  });
 }
 
 describe("classifyAgainstOwnHistory", () => {

@@ -1,7 +1,7 @@
 {
   "name": "vault-memory",
   "version": "0.1.0",
-  "description": "Agent-attributed memory layer for AI agents — single-agent now, multi-agent conflict resolution in the roadmap.",
+  "description": "Agent-attributed memory layer for AI agents with multi-agent conflict resolution and FAISS vector search.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -57,15 +57,10 @@
     "publish:public": "npm publish --access public"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.44.0",
-    "faiss-node": "^0.5.0"
-  },
-  "peerDependenciesMeta": {
-    "faiss-node": {
-      "optional": true
-    }
+    "drizzle-orm": "^0.44.0"
   },
   "dependencies": {
+    "faiss-node": "^0.5.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {

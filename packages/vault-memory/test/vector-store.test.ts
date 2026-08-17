@@ -1,15 +1,26 @@
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { claims } from "../src/db/schema";
+import { createDefaultVectorStore } from "../src/vector-store/create";
 import { MemoryVectorStore } from "../src/vector-store/memory";
 import {
   createTestDb,
   createTestVectorStore,
   getSqliteDb,
   insertClaim,
+  TEST_EMBEDDING_DIMENSIONS,
 } from "./helpers/db";
+import { createPureJsFaiss } from "./helpers/pure-js-faiss";
+import { FaissVectorStore } from "../src/vector-store/faiss";
 
-describe("MemoryVectorStore", () => {
+describe("FaissVectorStore (default)", () => {
+  test("createDefaultVectorStore returns a FAISS-backed index", () => {
+    const store = createDefaultVectorStore({
+      dimensions: TEST_EMBEDDING_DIMENSIONS,
+    });
+    expect(store).toBeInstanceOf(FaissVectorStore);
+  });
+
   test("upsert, search, and remove keep the index in sync", async () => {
     const vectorStore = createTestVectorStore();
 
@@ -32,14 +43,14 @@ describe("MemoryVectorStore", () => {
   test("excludeAgent filters cross-agent results", async () => {
     const vectorStore = createTestVectorStore();
 
-    await vectorStore.upsert("a", [1, 0], {
+    await vectorStore.upsert("a", [1, 0, 0], {
       claimId: "a",
       sourceAgent: "agent-a",
       entity: "user.timezone",
       status: "active",
       conversationId: "conv-1",
     });
-    await vectorStore.upsert("b", [1, 0], {
+    await vectorStore.upsert("b", [1, 0, 0], {
       claimId: "b",
       sourceAgent: "agent-b",
       entity: "user.timezone",
@@ -47,7 +58,7 @@ describe("MemoryVectorStore", () => {
       conversationId: "conv-1",
     });
 
-    const hits = await vectorStore.search([1, 0], {
+    const hits = await vectorStore.search([1, 0, 0], {
       limit: 5,
       filter: { excludeAgent: "agent-a", status: "active" },
     });
@@ -58,7 +69,10 @@ describe("MemoryVectorStore", () => {
 
   test("rebuild restores active claims from the database", async () => {
     const db = createTestDb();
-    const vectorStore = new MemoryVectorStore();
+    const vectorStore = new FaissVectorStore({
+      dimensions: TEST_EMBEDDING_DIMENSIONS,
+      faiss: createPureJsFaiss(),
+    });
 
     await insertClaim(db, {
       id: "claim-1",
@@ -112,5 +126,23 @@ describe("MemoryVectorStore", () => {
 
     await vectorStore.rebuild(db);
     expect(await vectorStore.search([1, 0, 0], { limit: 5 })).toHaveLength(0);
+  });
+});
+
+describe("MemoryVectorStore (legacy brute-force)", () => {
+  test("still available as an explicit fallback", async () => {
+    const vectorStore = new MemoryVectorStore();
+
+    await vectorStore.upsert("claim-1", [1, 0, 0], {
+      claimId: "claim-1",
+      sourceAgent: "agent-a",
+      entity: "user.diet",
+      status: "active",
+      conversationId: "conv-1",
+    });
+
+    const hits = await vectorStore.search([1, 0, 0], { limit: 5 });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.claimId).toBe("claim-1");
   });
 });

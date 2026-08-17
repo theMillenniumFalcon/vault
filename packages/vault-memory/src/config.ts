@@ -1,6 +1,7 @@
 import type { EmbedConfig } from "./embed";
 import type { VaultDb } from "./db/types";
 import type { ResolutionStrategy } from "./resolve";
+import { createDefaultVectorStore } from "./vector-store/create";
 import type { VectorStore } from "./vector-store/types";
 
 export type LLMMessage = {
@@ -21,8 +22,25 @@ export interface LLMConfig {
 
 export interface MemoryConfig extends LLMConfig, EmbedConfig {
   db: VaultDb;
-  vectorStore: VectorStore;
+  /** Defaults to {@link createDefaultVectorStore} (FAISS). */
+  vectorStore?: VectorStore;
+  /** Embedding dimensions for the default FAISS index. Default: 1536. */
+  vectorDimensions?: number;
   entityStrategies?: Partial<Record<string, ResolutionStrategy>>;
+}
+
+export type ResolvedMemoryConfig = MemoryConfig & { vectorStore: VectorStore };
+
+export function resolveVectorStore(config: MemoryConfig): VectorStore {
+  if (config.vectorStore) return config.vectorStore;
+  return createDefaultVectorStore({ dimensions: config.vectorDimensions });
+}
+
+export function resolveMemoryConfig(config: MemoryConfig): ResolvedMemoryConfig {
+  return {
+    ...config,
+    vectorStore: resolveVectorStore(config),
+  };
 }
 
 export function createDefaultOpenAILLM(

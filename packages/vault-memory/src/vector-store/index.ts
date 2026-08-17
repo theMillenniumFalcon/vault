@@ -3,6 +3,12 @@ export type {
   VectorMeta,
   VectorStore,
 } from "./types";
+export {
+  createDefaultVectorStore,
+  DEFAULT_EMBEDDING_DIMENSIONS,
+  type CreateVectorStoreOptions,
+} from "./create";
+export { FaissVectorStore, type FaissBindings, type FaissVectorStoreOptions } from "./faiss";
 export { MemoryVectorStore } from "./memory";
 export {
   cosineSimilarity,

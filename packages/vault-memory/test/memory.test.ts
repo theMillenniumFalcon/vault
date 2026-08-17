@@ -217,12 +217,13 @@ describe("Memory", () => {
         type: "semantic",
         sourceAgent: agentId,
         conversationId,
-        embedding: [1, 0],
+        embedding: [1, 0, 0],
       },
       vectorStore,
     );
 
-    const embed = async (text: string) => (text === "designer" ? [0, 1] : [1, 0]);
+    const embed = async (text: string) =>
+      text === "designer" ? [0, 1, 0] : [1, 0, 0];
     const llm: LLMFn = async ({ schema }) => schema.parse({ facts: [] });
     const memory = createMemory(db, vectorStore, llm, embed);
 
@@ -230,7 +231,7 @@ describe("Memory", () => {
 
     const row = (await listClaims(db))[0];
     expect(row?.text).toBe("designer");
-    expect(row?.embedding).toBe(JSON.stringify([0, 1]));
+    expect(row?.embedding).toBe(JSON.stringify([0, 1, 0]));
 
     const results = await memory.search("job");
     expect(results[0]?.text).toBe("designer");
@@ -248,7 +249,7 @@ describe("Memory", () => {
         type: "semantic",
         sourceAgent: agentId,
         conversationId,
-        embedding: [1, 0],
+        embedding: [1, 0, 0],
       },
       vectorStore,
     );

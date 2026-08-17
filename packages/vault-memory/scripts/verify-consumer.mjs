@@ -23,7 +23,7 @@ try {
     join(consumerDir, "test.mjs"),
     `import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { Memory, MemoryVectorStore } from "vault-memory";
+import { Memory } from "vault-memory";
 import { claims } from "vault-memory/schema";
 
 const sqlite = new Database(":memory:");
@@ -62,9 +62,8 @@ const llm = async ({ schema }) => {
   return schema.parse({ op: "ADD" });
 };
 const embed = async () => [1, 0, 0];
-const vectorStore = new MemoryVectorStore();
 
-const memory = new Memory("agent-a", { db, llm, embed, vectorStore });
+const memory = new Memory("agent-a", { db, llm, embed, vectorDimensions: 3 });
 const { added } = await memory.add(
   [{ role: "user", content: "I'm vegetarian" }],
   "consumer-test",

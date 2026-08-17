@@ -343,7 +343,7 @@ describe("search", () => {
         type: "semantic",
         sourceAgent: "agent-a",
         conversationId: "conv-1",
-        embedding: [1, 0],
+        embedding: [1, 0, 0],
       },
       vectorStore,
     );
@@ -356,12 +356,12 @@ describe("search", () => {
         type: "semantic",
         sourceAgent: "agent-a",
         conversationId: "conv-2",
-        embedding: [1, 0],
+        embedding: [1, 0, 0],
       },
       vectorStore,
     );
 
-    const embed = async () => [1, 0];
+    const embed = async () => [1, 0, 0];
     const results = await search(db, vectorStore, embed, "job", {
       conversationId: "conv-1",
     });

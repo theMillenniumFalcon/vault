@@ -2,10 +2,13 @@ export { agentAuthority, claims, disputes } from "./db/schema";
 export {
   createDefaultOpenAILLM,
   resolveLLM,
+  resolveMemoryConfig,
+  resolveVectorStore,
   type LLMConfig,
   type LLMFn,
   type LLMMessage,
   type MemoryConfig,
+  type ResolvedMemoryConfig,
 } from "./config";
 export {
   createDefaultOpenAIEmbed,
@@ -46,11 +49,17 @@ export {
   type VaultDb,
 } from "./search";
 export {
+  createDefaultVectorStore,
+  DEFAULT_EMBEDDING_DIMENSIONS,
+  FaissVectorStore,
   MemoryVectorStore,
   claimRowToVectorMeta,
   loadActiveClaimVectors,
   matchesVectorFilter,
   withActiveFilter,
+  type CreateVectorStoreOptions,
+  type FaissBindings,
+  type FaissVectorStoreOptions,
   type VectorFilter,
   type VectorMeta,
   type VectorStore,

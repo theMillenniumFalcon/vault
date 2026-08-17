@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { LLMConfig, MemoryConfig } from "./config";
+import type { LLMConfig, MemoryConfig, ResolvedMemoryConfig } from "./config";
 import { resolveLLM } from "./config";
 import { resolveConflict, strategyForEntity, toCrossAgentClassifyResult } from "./resolve";
 import { searchClaims, searchOwnClaims } from "./search";
@@ -97,7 +97,7 @@ export async function classifyAgainstOwnHistory(
   fact: ExtractedFact,
   agentId: string,
   embedding: number[],
-  config: MemoryConfig,
+  config: ResolvedMemoryConfig,
 ): Promise<ClassifyResult> {
   const similarOwnClaims = await searchOwnClaims(
     config.db,
@@ -113,7 +113,7 @@ export async function classifyAgainstOtherAgents(
   fact: ExtractedFact,
   agentId: string,
   embedding: number[],
-  config: MemoryConfig,
+  config: ResolvedMemoryConfig,
 ): Promise<CrossAgentClassifyResult> {
   const crossAgent = await searchClaims(
     config.db,

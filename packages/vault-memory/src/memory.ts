@@ -1,6 +1,10 @@
-import type { MemoryConfig } from "./config";
-import { claims } from "./db/schema";
+import {
+  resolveMemoryConfig,
+  type MemoryConfig,
+  type ResolvedMemoryConfig,
+} from "./config";
 import { resolveEmbed } from "./embed";
+import { claims } from "./db/schema";
 import {
   classifyAgainstOtherAgents,
   classifyAgainstOwnHistory,
@@ -15,11 +19,13 @@ import type { Claim, Message, ScoredClaim, SearchOpts } from "./types";
 
 export class Memory {
   private readonly embed: ReturnType<typeof resolveEmbed>;
+  private readonly config: ResolvedMemoryConfig;
 
   constructor(
     private readonly agentId: string,
-    private readonly config: MemoryConfig,
+    config: MemoryConfig,
   ) {
+    this.config = resolveMemoryConfig(config);
     this.embed = resolveEmbed(config);
   }
 

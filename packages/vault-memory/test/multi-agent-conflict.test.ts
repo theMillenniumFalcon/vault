@@ -2,48 +2,23 @@ import { describe, expect, test } from "bun:test";
 import { disputes } from "../src/db/schema";
 import { EXAMPLE_AUTHORITY_SEED, seedAuthority } from "../src/resolve";
 import { search } from "../src/search";
-import { FaissVectorStore } from "../src/vector-store/faiss";
-import { MemoryVectorStore } from "../src/vector-store/memory";
-import type { VectorStore } from "../src/vector-store/types";
 import {
   createAgentMemory,
   createHarnessEmbed,
-  EMBED_DIM,
 } from "./helpers/conflict-harness";
 import {
   createTestDb,
+  createTestVectorStore,
   getSqliteDb,
   insertAuthority,
   listClaims,
   listDisputes,
 } from "./helpers/db";
-import { createPureJsFaiss } from "./helpers/pure-js-faiss";
 
-type Backend = {
-  name: string;
-  createStore: () => VectorStore;
-};
-
-const backends: Backend[] = [
-  {
-    name: "MemoryVectorStore (brute-force)",
-    createStore: () => new MemoryVectorStore(),
-  },
-  {
-    name: "FaissVectorStore (indexed)",
-    createStore: () =>
-      new FaissVectorStore({
-        dimensions: EMBED_DIM,
-        faiss: createPureJsFaiss(),
-      }),
-  },
-];
-
-for (const backend of backends) {
-  describe(`multi-agent conflict harness — ${backend.name}`, () => {
-    test("authority strategy: higher-weighted agent wins on timezone conflict", async () => {
-      const db = createTestDb();
-      const vectorStore = backend.createStore();
+describe("multi-agent conflict harness", () => {
+  test("authority strategy: higher-weighted agent wins on timezone conflict", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
       await seedAuthority(db, EXAMPLE_AUTHORITY_SEED);
 
       const agentA = createAgentMemory(
@@ -100,7 +75,7 @@ for (const backend of backends) {
 
     test("authority strategy: lower-weighted agent loses → DISPUTE", async () => {
       const db = createTestDb();
-      const vectorStore = backend.createStore();
+      const vectorStore = createTestVectorStore();
       await insertAuthority(db, EXAMPLE_AUTHORITY_SEED);
 
       const agentA = createAgentMemory(
@@ -154,7 +129,7 @@ for (const backend of backends) {
 
     test("no authority config for entity → falls back to recency", async () => {
       const db = createTestDb();
-      const vectorStore = backend.createStore();
+      const vectorStore = createTestVectorStore();
       // Authority seeded for timezone/mood only — diet has none, and no entityStrategies.
 
       const agentA = createAgentMemory("agent-a", db, vectorStore, [
@@ -200,7 +175,7 @@ for (const backend of backends) {
 
     test("same-entity different wording still conflicts via entity filter", async () => {
       const db = createTestDb();
-      const vectorStore = backend.createStore();
+      const vectorStore = createTestVectorStore();
       await seedAuthority(db, EXAMPLE_AUTHORITY_SEED);
 
       const agentA = createAgentMemory(
@@ -256,7 +231,7 @@ for (const backend of backends) {
 
     test("deliberately ambiguous: equal authority → DISPUTE (baseline before llm-judge)", async () => {
       const db = createTestDb();
-      const vectorStore = backend.createStore();
+      const vectorStore = createTestVectorStore();
       await insertAuthority(db, [
         { entity: "user.timezone", agentId: "agent-a", weight: 0.5 },
         { entity: "user.timezone", agentId: "agent-b", weight: 0.5 },
@@ -314,7 +289,7 @@ for (const backend of backends) {
 
     test("consensus baseline: two agents agree → recency REPLACE, no confidence bump", async () => {
       const db = createTestDb();
-      const vectorStore = backend.createStore();
+      const vectorStore = createTestVectorStore();
 
       const agentA = createAgentMemory("agent-a", db, vectorStore, [
         {
@@ -354,7 +329,7 @@ for (const backend of backends) {
 
     test("authority win via REPLACE when higher-weighted agent writes second", async () => {
       const db = createTestDb();
-      const vectorStore = backend.createStore();
+      const vectorStore = createTestVectorStore();
       await seedAuthority(db, EXAMPLE_AUTHORITY_SEED);
 
       const agentB = createAgentMemory(
@@ -409,5 +384,4 @@ for (const backend of backends) {
       expect(result[0]?.sourceAgent).toBe("agent-a");
       expect(result[0]?.text).toContain("PST");
     });
-  });
-}
+});
