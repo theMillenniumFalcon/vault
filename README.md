@@ -235,7 +235,7 @@ import { claims, agentAuthority, disputes } from "vault-memory/schema";
 ┌─────────────────────────────────────────────────────────────┐
 │  Agent process (agent-a, agent-b, …)                        │
 │  ┌─────────────┐    ┌──────────────────┐                    │
-│  │   Memory    │    │ FaissVectorStore │  (per-process)     │
+│  │   Memory    │--->│ FaissVectorStore │  (per-process)     │
 │  └──────┬──────┘    └────────┬─────────┘                    │
 │         │ extract/classify   │ rebuild / upsert             │
 └─────────┼────────────────────┼──────────────────────────────┘
