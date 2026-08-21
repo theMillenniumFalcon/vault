@@ -1,0 +1,116 @@
+# Entities
+
+How Vault decides what `entity` string goes on a claim (e.g. `user.timezone`, `user.diet`).
+
+## Short answer
+
+**Entities are not a hardcoded enum.** At runtime, the **extraction LLM** picks a dotted-path string guided by a prompt. Demo configs and tests hardcode specific entities for predictability.
+
+## Where entities come from
+
+When you call `memory.add(messages, ...)`, `extractFacts()` in `src/extract.ts` runs first:
+
+```json
+{ "facts": [{ "entity": "user.timezone", "text": "The user is in PST", "type": "semantic" }] }
+```
+
+The system prompt suggests a naming style but does **not** restrict to a fixed list:
+
+```
+- entity: a short dotted path for the subject, e.g. "user", "user.diet", "user.location", "user.job"
+```
+
+Validation is only `z.string().min(1)` — any non-empty string is accepted.
+
+**Decision maker:** the extraction LLM, guided by that prompt.
+
+## What is hardcoded (and what isn't)
+
+| Location | Hardcoded? | Purpose |
+|----------|------------|---------|
+| `extract.ts` prompt | Examples only (`user.diet`, etc.) | Style guidance for LLM |
+| `resolve.ts` → `EXAMPLE_AUTHORITY_SEED` | Yes — `user.timezone`, `user.mood` | Demo seed data |
+| `apps/cli-agent` → `SHARED_ENTITY_STRATEGIES` | Yes — same entities | CLI demo config |
+| Tests / `verify-consumer.mjs` | Yes — scripted fake LLM | Deterministic tests |
+| Core library runtime | **No fixed taxonomy** | Accepts any entity string |
+
+## How entity is used after extraction
+
+Once chosen, the entity string flows through the pipeline as an opaque key:
+
+### Same-agent classify
+
+Vector search finds similar claims from **this agent** (not strictly filtered by entity first). The classify LLM decides ADD/UPDATE/REPLACE/NOOP using entity + text context.
+
+### Cross-agent classify
+
+Only compares claims with the **exact same entity**:
+
+```typescript
+searchClaims(db, vectorStore, embedding, {
+  excludeAgent: agentId,
+  entity: fact.entity,   // exact match
+  status: "active",
+  limit: 5,
+});
+```
+
+**Implication:** agent-a storing `user.timezone` and agent-b storing `user.location` for the same real-world fact **will not conflict** — different entity strings = no cross-agent match.
+
+### Conflict strategy lookup
+
+Exact key in config:
+
+```typescript
+config.entityStrategies?.[entity] ?? "recency"
+```
+
+No config for that entity → defaults to **recency**.
+
+### Authority weights
+
+Pattern matching with wildcards (e.g. `user.schedule.*`):
+
+```typescript
+getAuthority(db, agentId, entity)
+```
+
+Uses `entityMatchesPattern()` — exact match beats wildcard; most specific pattern wins.
+
+If you seed authority for `user.timezone` but the LLM extracts `user.location`, authority rules for timezone won't apply.
+
+## Full decision chain
+
+1. User says: `"I'm in PST"`
+2. Extraction LLM returns: `{ entity: "user.timezone", text: "The user is in PST" }`
+3. Entity stored on the claim row in SQL
+4. Another agent writes conflicting fact on the **same entity string** → cross-agent conflict triggers
+5. `entityStrategies["user.timezone"]` picks recency vs authority (if configured)
+6. `agent_authority` rows for that entity decide who wins (if strategy is authority)
+
+## Consistency risk
+
+Entity naming is **LLM-dependent**, not enforced by Vault:
+
+- No ontology or enum of allowed entities
+- No normalization (`timezone` vs `time_zone` vs `user.location`)
+- Conflict detection requires **exact entity match**
+
+Production apps may want:
+
+- A fixed entity taxonomy the LLM must pick from (custom extraction prompt)
+- Post-extraction normalization
+- Wildcard `entityStrategies` (authority DB already supports wildcards; strategy config is exact-key only today)
+
+## Recommendations
+
+1. **Document your entity convention** for your app (e.g. always `user.<domain>`)
+2. **Seed authority** for entities where domain trust matters
+3. **Set `entityStrategies`** explicitly for those entities — otherwise everything falls back to recency
+4. **Monitor extraction** — log entities the LLM returns and fix prompt drift early
+
+## Related
+
+- [Multi-agent conflict](./multi-agent-conflict.md) — how entity-scoped conflicts resolve
+- [API reference](./api.md) — `entityStrategies` config
+- Extraction prompt: `packages/vault-memory/src/extract.ts`

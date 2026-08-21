@@ -4,6 +4,8 @@ Agent-attributed memory for AI agents — extract facts from conversation, store
 
 The core library [`vault-memory`](./packages/vault-memory) is designed to publish on npm. You bring your own database (Drizzle + SQLite or Postgres); Vault brings extraction, classification, FAISS vector search, and multi-agent conflict policy.
 
+**Team docs:** [docs/onboarding.md](./docs/onboarding.md) (start here) · [docs/](./docs/) (full index)
+
 ---
 
 ## Why Vault
@@ -27,9 +29,7 @@ vault/
 │   └── vault-memory/     # npm package — Memory API, schema, vector store, conflict resolution
 ├── apps/
 │   ├── cli-agent/        # Multi-agent CLI demo (two terminals, one SQLite file)
-│   └── web/              # Marketing / docs site (Next.js)
-├── plan1.md              # Phase 1 design notes (single-agent foundation)
-└── plan2.md              # Phase 2 design notes (multi-agent + vector store)
+└── └── web/              # Marketing / docs site (Next.js)
 ```
 
 | Package / app | Purpose |
@@ -255,11 +255,11 @@ Each agent process holds its own FAISS index in memory. When using a shared SQLi
 
 | Doc | Contents |
 |-----|----------|
-| [packages/vault-memory/README.md](./packages/vault-memory/README.md) | Install, quickstart, API, config |
-| [packages/vault-memory/docs/multi-agent-conflict.md](./packages/vault-memory/docs/multi-agent-conflict.md) | Two-pass classify, strategies, disputes |
+| [docs/README.md](./docs/README.md) | **Internal docs index** — start here for team onboarding |
+| [packages/vault-memory/README.md](./packages/vault-memory/README.md) | Install, quickstart, API, config (npm) |
+| [packages/vault-memory/docs/multi-agent-conflict.md](./packages/vault-memory/docs/multi-agent-conflict.md) | Two-pass classify, strategies, disputes (package copy) |
 | [apps/cli-agent/README.md](./apps/cli-agent/README.md) | Two-terminal multi-agent demo |
-| [plan1.md](./plan1.md) | Phase 1 design (single-agent foundation) |
-| [plan2.md](./plan2.md) | Phase 2 design (multi-agent, FAISS, decay, wiring) |
+| [MANUAL-TESTING.md](./MANUAL-TESTING.md) | E2E testing guide (PowerShell) |
 
 ---
 
@@ -275,7 +275,7 @@ Each agent process holds its own FAISS index in memory. When using a shared SQLi
 | Synthetic conflict test harness | Shipped |
 | CLI multi-agent demo | Shipped |
 | `consensus` / `llm-judge` strategies | Not implemented (deferred per harness) |
-| `vault-memory@0.2.0` npm publish + consumer two-agent test | Changeset + consumer test ready; publish when tagged |
+| `vault-memory@0.2.0` npm publish + consumer two-agent test | Shipped on npm |
 | Approximate FAISS indexes (IVF/HNSW) | Not needed until 10k+ claims |
 
 ---
