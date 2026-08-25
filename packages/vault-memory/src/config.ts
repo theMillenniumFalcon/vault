@@ -27,6 +27,10 @@ export interface MemoryConfig extends LLMConfig, EmbedConfig {
   vectorStore?: VectorStore;
   /** Embedding dimensions for the default FAISS index. Default: 1536. */
   vectorDimensions?: number;
+  /**
+   * Per-entity conflict strategy. Keys support wildcards (e.g. `user.schedule.*`);
+   * most specific match wins. Default for unmatched entities: `recency`.
+   */
   entityStrategies?: Partial<Record<string, ResolutionStrategy>>;
   /**
    * Cosine similarity threshold (0–1) to align a new fact's entity with an

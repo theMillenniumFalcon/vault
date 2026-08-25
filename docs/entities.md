@@ -124,6 +124,7 @@ Key code: `src/resolve-entity.ts` (`resolveEntity`, `disambiguateEntityWithLlm`)
 | `useEntityRegistry` | Enable canonical entity table + constrained extraction |
 | `entityRegistryAutoRegister` | Auto-insert valid `new:` keys (default true) |
 | `entityKeyPattern` | Regex source for new keys (default `user.*`) |
+| `entityStrategies` | Per-entity or wildcard (`user.schedule.*`) conflict strategy |
 
 ## How entity is used after extraction
 
@@ -150,13 +151,14 @@ searchClaims(db, vectorStore, embedding, {
 
 ### Conflict strategy lookup
 
-Exact key in config:
+Exact key or **wildcard pattern** in config (most specific wins, same rules as `agent_authority`):
 
 ```typescript
-config.entityStrategies?.[entity] ?? "recency"
+config.entityStrategies?.[entity] // exact fast path
+// or pattern match: "user.schedule.*" → applies to user.schedule.monday
 ```
 
-No config for that entity → defaults to **recency**.
+No config match → defaults to **recency**.
 
 ### Authority weights
 

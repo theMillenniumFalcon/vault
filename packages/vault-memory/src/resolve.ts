@@ -33,7 +33,27 @@ export function strategyForEntity(
   entity: string,
   config: MemoryConfig,
 ): ResolutionStrategy {
-  return config.entityStrategies?.[entity] ?? "recency";
+  const strategies = config.entityStrategies;
+  if (!strategies) return "recency";
+
+  if (strategies[entity]) return strategies[entity];
+
+  let best: ResolutionStrategy = "recency";
+  let bestSpecificity = -1;
+  let matched = false;
+
+  for (const [pattern, strategy] of Object.entries(strategies)) {
+    if (strategy === undefined) continue;
+    if (!entityMatchesPattern(entity, pattern)) continue;
+    const specificity = patternSpecificity(pattern);
+    if (specificity > bestSpecificity) {
+      bestSpecificity = specificity;
+      best = strategy;
+      matched = true;
+    }
+  }
+
+  return matched ? best : "recency";
 }
 
 export async function resolveConflict(

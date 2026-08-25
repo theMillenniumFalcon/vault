@@ -47,7 +47,7 @@ Triggered only when pass 1 returns **ADD**.
 
 1. Search for active claims on the same **`entity`**, excluding the writing agent.
 2. If none → **ADD** (no conflict).
-3. If conflicts exist → resolve via `entityStrategies[entity]` or default **`recency`**.
+3. If conflicts exist → resolve via `strategyForEntity(entity)` (exact or wildcard `entityStrategies`) or default **`recency`**.
 
 ### Strategy: `recency` (default)
 

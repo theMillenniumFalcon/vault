@@ -58,6 +58,26 @@ describe("strategyForEntity", () => {
     expect(strategyForEntity("user.timezone", config)).toBe("authority");
     expect(strategyForEntity("user.mood", config)).toBe("recency");
   });
+
+  test("wildcard entityStrategies match by prefix pattern", () => {
+    const config = createConfig({
+      entityStrategies: { "user.schedule.*": "authority" },
+    });
+    expect(strategyForEntity("user.schedule.monday", config)).toBe("authority");
+    expect(strategyForEntity("user.schedule", config)).toBe("recency");
+    expect(strategyForEntity("user.mood", config)).toBe("recency");
+  });
+
+  test("exact entityStrategies beats wildcard for same entity", () => {
+    const config = createConfig({
+      entityStrategies: {
+        "user.timezone": "recency",
+        "user.*": "authority",
+      },
+    });
+    expect(strategyForEntity("user.timezone", config)).toBe("recency");
+    expect(strategyForEntity("user.mood", config)).toBe("authority");
+  });
 });
 
 describe("entityMatchesPattern", () => {
