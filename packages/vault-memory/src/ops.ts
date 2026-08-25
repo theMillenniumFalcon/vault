@@ -81,10 +81,13 @@ export async function applyOp(
       throw new Error("UPDATE requires targetClaimId");
     }
 
+    const existing = await getClaimRow(db, targetClaimId);
+
     await db
       .update(claims)
       .set({
-        entity: fact.entity,
+        // Keep the incumbent entity when merging — extractor labels can drift.
+        entity: existing.entity,
         text: fact.text,
         type: fact.type,
         embedding: embeddingJson,

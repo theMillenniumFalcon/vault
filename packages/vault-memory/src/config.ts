@@ -1,5 +1,6 @@
 import type { EmbedConfig } from "./embed";
 import type { VaultDb } from "./db/types";
+import type { EntityResolverFn } from "./resolve-entity";
 import type { ResolutionStrategy } from "./resolve";
 import { createDefaultVectorStore } from "./vector-store/create";
 import type { VectorStore } from "./vector-store/types";
@@ -27,6 +28,13 @@ export interface MemoryConfig extends LLMConfig, EmbedConfig {
   /** Embedding dimensions for the default FAISS index. Default: 1536. */
   vectorDimensions?: number;
   entityStrategies?: Partial<Record<string, ResolutionStrategy>>;
+  /**
+   * Cosine similarity threshold (0–1) to align a new fact's entity with an
+   * existing active claim. Set to 0 to disable. Default: 0.85.
+   */
+  entityMatchThreshold?: number;
+  /** Override entity resolution (default: similarity-based {@link resolveEntity}). */
+  resolveEntity?: EntityResolverFn;
 }
 
 export type ResolvedMemoryConfig = MemoryConfig & { vectorStore: VectorStore };

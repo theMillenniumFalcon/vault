@@ -11,6 +11,7 @@ import {
 } from "./classify";
 import { extractFacts } from "./extract";
 import { applyCrossAgentResolution, applyOp } from "./ops";
+import { resolveEntity as defaultResolveEntity } from "./resolve-entity";
 import {
   agentClaimFilter,
   search as searchClaims,
@@ -36,10 +37,14 @@ export class Memory {
     const facts = await extractFacts(messages, this.config);
     const results: Claim[] = [];
 
+    const resolveEntityFn = this.config.resolveEntity ?? defaultResolveEntity;
+
     for (const fact of facts) {
       const embedding = await this.embed(fact.text);
+      const resolvedFact = await resolveEntityFn(fact, embedding, this.config);
+
       const ownResult = await classifyAgainstOwnHistory(
-        fact,
+        resolvedFact,
         this.agentId,
         embedding,
         this.config,
@@ -49,7 +54,7 @@ export class Memory {
 
       if (ownResult.op === "ADD") {
         const crossResult = await classifyAgainstOtherAgents(
-          fact,
+          resolvedFact,
           this.agentId,
           embedding,
           this.config,
@@ -59,7 +64,7 @@ export class Memory {
             this.config.db,
             this.config.vectorStore,
             crossResult,
-            fact,
+            resolvedFact,
             embedding,
             this.agentId,
             conversationId,
@@ -73,7 +78,7 @@ export class Memory {
           this.config.db,
           this.config.vectorStore,
           ownResult.op,
-          fact,
+          resolvedFact,
           embedding,
           ownResult.targetClaimId,
           this.agentId,

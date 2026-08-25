@@ -22,7 +22,33 @@ The system prompt suggests a naming style but does **not** restrict to a fixed l
 
 Validation is only `z.string().min(1)` — any non-empty string is accepted.
 
-**Decision maker:** the extraction LLM, guided by that prompt.
+**Decision maker:** the extraction LLM, guided by that prompt — then **entity resolution** (below) may align it with an existing claim.
+
+## Entity resolution (P0)
+
+After extraction, before classify, `resolveEntity()` runs on each fact:
+
+1. Embed the fact text (same vector used for classify).
+2. Search **all active claims** globally (no entity filter) via vector similarity.
+3. If the top hit scores ≥ `entityMatchThreshold` (default **0.85**) and has a **different** entity string → rewrite `fact.entity` to the incumbent's entity.
+
+This fixes drift like `user.abc` vs `user.timezone` when the facts are semantically similar. Cross-agent conflict and authority then work on the aligned entity.
+
+Disable with `entityMatchThreshold: 0` or override `resolveEntity` in config.
+
+**Also:** on `UPDATE`, the stored entity is **preserved** from the target claim (extractor labels cannot rename via merge).
+
+**Not fixed yet:** brand-new facts with no similar existing claims still get whatever entity the LLM invents. A canonical entity registry (P2) would address that.
+
+```typescript
+const memory = new Memory("agent-a", {
+  db,
+  apiKey: process.env.OPENAI_API_KEY,
+  entityMatchThreshold: 0.85, // default; set 0 to disable
+});
+```
+
+Key code: `src/resolve-entity.ts`, wired in `src/memory.ts`.
 
 ## What is hardcoded (and what isn't)
 
@@ -90,11 +116,11 @@ If you seed authority for `user.timezone` but the LLM extracts `user.location`, 
 
 ## Consistency risk
 
-Entity naming is **LLM-dependent**, not enforced by Vault:
+Entity naming from extraction alone is still **LLM-dependent**. Resolution reduces drift when similar claims already exist, but does not enforce a fixed taxonomy:
 
-- No ontology or enum of allowed entities
-- No normalization (`timezone` vs `time_zone` vs `user.location`)
-- Conflict detection requires **exact entity match**
+- No ontology or enum of allowed entities (without custom `resolveEntity` / registry)
+- No normalization (`timezone` vs `time_zone`) unless vectors happen to align
+- Conflict detection still requires **exact entity match** after resolution
 
 Production apps may want:
 

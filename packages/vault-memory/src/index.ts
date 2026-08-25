@@ -25,6 +25,12 @@ export { extractFacts, getLatestTurn } from "./extract";
 export { Memory } from "./memory";
 export { applyCrossAgentResolution, applyOp, syncClaimVectorFromRow } from "./ops";
 export {
+  DEFAULT_ENTITY_MATCH_THRESHOLD,
+  defaultResolveEntity,
+  resolveEntity,
+  type EntityResolverFn,
+} from "./resolve-entity";
+export {
   EXAMPLE_AUTHORITY_SEED,
   entityMatchesPattern,
   getAuthority,
