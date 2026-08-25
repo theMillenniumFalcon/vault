@@ -24,17 +24,21 @@ Validation is only `z.string().min(1)` — any non-empty string is accepted.
 
 **Decision maker:** the extraction LLM, guided by that prompt — then **entity resolution** (below) may align it with an existing claim.
 
-## Entity resolution (P0)
+## Entity resolution
 
 After extraction, before classify, `resolveEntity()` runs on each fact:
 
 1. Embed the fact text (same vector used for classify).
 2. Search **all active claims** globally (no entity filter) via vector similarity.
-3. If the top hit scores ≥ `entityMatchThreshold` (default **0.85**) and has a **different** entity string → rewrite `fact.entity` to the incumbent's entity.
+3. Apply a **three-band** decision:
 
-This fixes drift like `user.abc` vs `user.timezone` when the facts are semantically similar. Cross-agent conflict and authority then work on the aligned entity.
+| Similarity score | Behavior |
+|------------------|----------|
+| **≥ 0.85** (`entityMatchThreshold`) | Auto-align to incumbent entity |
+| **0.70 – 0.85** (borderline) | LLM disambiguation — align or keep extracted |
+| **< 0.70** (`entityDisambiguationThreshold`) | Keep extracted entity |
 
-Disable with `entityMatchThreshold: 0` or override `resolveEntity` in config.
+This fixes drift like `user.abc` vs `user.timezone` when facts are semantically similar. Cross-agent conflict and authority then work on the aligned entity.
 
 **Also:** on `UPDATE`, the stored entity is **preserved** from the target claim (extractor labels cannot rename via merge).
 
@@ -44,11 +48,15 @@ Disable with `entityMatchThreshold: 0` or override `resolveEntity` in config.
 const memory = new Memory("agent-a", {
   db,
   apiKey: process.env.OPENAI_API_KEY,
-  entityMatchThreshold: 0.85, // default; set 0 to disable
+  entityMatchThreshold: 0.85,           // auto-align (default)
+  entityDisambiguationThreshold: 0.70,  // LLM band floor (default)
+  entityResolutionUseLlm: true,         // set false to skip borderline LLM
 });
 ```
 
-Key code: `src/resolve-entity.ts`, wired in `src/memory.ts`.
+Borderline LLM sees the new fact plus top similar claims and must pick from allowed entity keys (extracted + candidates). Invalid keys are rejected by Zod.
+
+Key code: `src/resolve-entity.ts` (`resolveEntity`, `disambiguateEntityWithLlm`), wired in `src/memory.ts`.
 
 ## What is hardcoded (and what isn't)
 
@@ -58,7 +66,16 @@ Key code: `src/resolve-entity.ts`, wired in `src/memory.ts`.
 | `resolve.ts` → `EXAMPLE_AUTHORITY_SEED` | Yes — `user.timezone`, `user.mood` | Demo seed data |
 | `apps/cli-agent` → `SHARED_ENTITY_STRATEGIES` | Yes — same entities | CLI demo config |
 | Tests / `verify-consumer.mjs` | Yes — scripted fake LLM | Deterministic tests |
-| Core library runtime | **No fixed taxonomy** | Accepts any entity string |
+| Core library runtime | **No fixed taxonomy** | Accepts any entity string; resolution aligns when similar claims exist |
+
+### Config knobs
+
+| Option | Purpose |
+|--------|---------|
+| `entityMatchThreshold` | Auto-align when similarity ≥ this (default 0.85; 0 = disable) |
+| `entityDisambiguationThreshold` | LLM band floor (default 0.70) |
+| `entityResolutionUseLlm` | Skip borderline LLM when false |
+| `resolveEntity` | Full override hook |
 
 ## How entity is used after extraction
 

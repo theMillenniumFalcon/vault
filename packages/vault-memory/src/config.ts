@@ -33,6 +33,17 @@ export interface MemoryConfig extends LLMConfig, EmbedConfig {
    * existing active claim. Set to 0 to disable. Default: 0.85.
    */
   entityMatchThreshold?: number;
+  /**
+   * Minimum similarity (0–1) for borderline LLM entity disambiguation.
+   * Scores between this and {@link entityMatchThreshold} may call the LLM.
+   * Default: 0.70.
+   */
+  entityDisambiguationThreshold?: number;
+  /**
+   * When false, skip LLM disambiguation in the borderline band (keep extracted entity).
+   * Default: true when llm/apiKey is configured.
+   */
+  entityResolutionUseLlm?: boolean;
   /** Override entity resolution (default: similarity-based {@link resolveEntity}). */
   resolveEntity?: EntityResolverFn;
 }

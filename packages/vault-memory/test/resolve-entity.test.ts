@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import type { LLMFn } from "../src/config";
 import {
+  DEFAULT_ENTITY_DISAMBIGUATION_THRESHOLD,
   DEFAULT_ENTITY_MATCH_THRESHOLD,
+  disambiguateEntityWithLlm,
   resolveEntity,
 } from "../src/resolve-entity";
 import { applyOp } from "../src/ops";
@@ -15,17 +18,25 @@ import { resolveMemoryConfig } from "../src/config";
 
 const pstEmbedding = [1, 0.05, 0];
 const estEmbedding = [0.05, 1, 0];
+/** ~0.76 cosine similarity with [1, 0, 0] — borderline band. */
+const borderlineEmbedding = [0.7, 0.6, 0];
 
 function createConfig(
   db: ReturnType<typeof createTestDb>,
   vectorStore: ReturnType<typeof createTestVectorStore>,
-  entityMatchThreshold?: number,
+  overrides: {
+    entityMatchThreshold?: number;
+    entityDisambiguationThreshold?: number;
+    entityResolutionUseLlm?: boolean;
+    llm?: LLMFn;
+    apiKey?: string;
+  } = {},
 ) {
   return resolveMemoryConfig({
     db,
     vectorStore,
-    entityMatchThreshold,
     apiKey: "test-key",
+    ...overrides,
   });
 }
 
@@ -92,7 +103,7 @@ describe("resolveEntity", () => {
   test("keeps extracted entity when threshold is 0 (disabled)", async () => {
     const db = createTestDb();
     const vectorStore = createTestVectorStore();
-    const config = createConfig(db, vectorStore, 0);
+    const config = createConfig(db, vectorStore, { entityMatchThreshold: 0 });
 
     await insertClaim(
       db,
@@ -149,6 +160,138 @@ describe("resolveEntity", () => {
 
   test("default threshold is 0.85", () => {
     expect(DEFAULT_ENTITY_MATCH_THRESHOLD).toBe(0.85);
+  });
+
+  test("default disambiguation threshold is 0.70", () => {
+    expect(DEFAULT_ENTITY_DISAMBIGUATION_THRESHOLD).toBe(0.7);
+  });
+
+  test("borderline score: LLM aligns to candidate entity", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    const llm: LLMFn = async ({ schema }) =>
+      schema.parse({ entity: "user.timezone" });
+
+    const config = createConfig(db, vectorStore, { llm });
+
+    await insertClaim(
+      db,
+      {
+        id: "claim-tz",
+        entity: "user.timezone",
+        text: "The user is in PST",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+
+    const fact: ExtractedFact = {
+      entity: "user.abc",
+      text: "The user is in Pacific time",
+      type: "semantic",
+    };
+
+    const resolved = await resolveEntity(fact, borderlineEmbedding, config);
+    expect(resolved.entity).toBe("user.timezone");
+  });
+
+  test("borderline score: LLM keeps extracted entity", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    const llm: LLMFn = async ({ schema }) =>
+      schema.parse({ entity: "user.abc" });
+
+    const config = createConfig(db, vectorStore, { llm });
+
+    await insertClaim(
+      db,
+      {
+        id: "claim-tz",
+        entity: "user.timezone",
+        text: "The user is in PST",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+
+    const fact: ExtractedFact = {
+      entity: "user.abc",
+      text: "Something vaguely related",
+      type: "semantic",
+    };
+
+    const resolved = await resolveEntity(fact, borderlineEmbedding, config);
+    expect(resolved.entity).toBe("user.abc");
+  });
+
+  test("borderline score: skips LLM when entityResolutionUseLlm is false", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    let llmCalls = 0;
+    const llm: LLMFn = async ({ schema }) => {
+      llmCalls += 1;
+      return schema.parse({ entity: "user.timezone" });
+    };
+
+    const config = createConfig(db, vectorStore, {
+      llm,
+      entityResolutionUseLlm: false,
+    });
+
+    await insertClaim(
+      db,
+      {
+        id: "claim-tz",
+        entity: "user.timezone",
+        text: "The user is in PST",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+
+    const fact: ExtractedFact = {
+      entity: "user.abc",
+      text: "Pacific time",
+      type: "semantic",
+    };
+
+    const resolved = await resolveEntity(fact, borderlineEmbedding, config);
+    expect(resolved.entity).toBe("user.abc");
+    expect(llmCalls).toBe(0);
+  });
+
+  test("disambiguateEntityWithLlm rejects invalid entity keys", async () => {
+    const fact: ExtractedFact = {
+      entity: "user.abc",
+      text: "test",
+      type: "semantic",
+    };
+    const llm: LLMFn = async ({ schema }) =>
+      schema.parse({ entity: "user.invalid" });
+
+    await expect(
+      disambiguateEntityWithLlm(
+        fact,
+        [
+          {
+            claimId: "c1",
+            entity: "user.timezone",
+            text: "PST",
+            score: 0.75,
+          },
+        ],
+        { llm },
+      ),
+    ).rejects.toThrow();
   });
 
   test("UPDATE preserves incumbent entity when extractor label drifts", async () => {

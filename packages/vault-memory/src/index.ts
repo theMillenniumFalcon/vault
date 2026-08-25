@@ -25,8 +25,10 @@ export { extractFacts, getLatestTurn } from "./extract";
 export { Memory } from "./memory";
 export { applyCrossAgentResolution, applyOp, syncClaimVectorFromRow } from "./ops";
 export {
+  DEFAULT_ENTITY_DISAMBIGUATION_THRESHOLD,
   DEFAULT_ENTITY_MATCH_THRESHOLD,
   defaultResolveEntity,
+  disambiguateEntityWithLlm,
   resolveEntity,
   type EntityResolverFn,
 } from "./resolve-entity";
