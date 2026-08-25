@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { LLMConfig, ResolvedMemoryConfig } from "./config";
 import { resolveLLM } from "./config";
+import { listRegistryEntities } from "./entity-registry";
 import { getClaimRow } from "./search";
 import type { ExtractedFact } from "./types";
 import { withActiveFilter } from "./vector-store/utils";
@@ -71,10 +72,12 @@ async function loadCandidates(
 function buildDisambiguationSchema(
   fact: ExtractedFact,
   candidates: EntityCandidate[],
+  additionalAllowed: string[] = [],
 ) {
   const allowed = new Set([
     fact.entity,
     ...candidates.map((candidate) => candidate.entity),
+    ...additionalAllowed,
   ]);
 
   return z
@@ -96,11 +99,19 @@ export async function disambiguateEntityWithLlm(
   fact: ExtractedFact,
   candidates: EntityCandidate[],
   config: LLMConfig,
+  additionalAllowed: string[] = [],
 ): Promise<ExtractedFact> {
   if (candidates.length === 0) return fact;
 
   const llm = resolveLLM(config);
-  const schema = buildDisambiguationSchema(fact, candidates);
+  const schema = buildDisambiguationSchema(fact, candidates, additionalAllowed);
+  const allowedList = [
+    fact.entity,
+    ...new Set([
+      ...candidates.map((c) => c.entity),
+      ...additionalAllowed,
+    ]),
+  ];
   const response = await llm({
     messages: [
       { role: "system", content: ENTITY_DISAMBIGUATION_SYSTEM_PROMPT },
@@ -115,7 +126,7 @@ export async function disambiguateEntityWithLlm(
           "Candidate existing claims (similarity search):",
           formatCandidates(candidates),
           "",
-          `Allowed entity keys: ${[fact.entity, ...new Set(candidates.map((c) => c.entity))].join(", ")}`,
+          `Allowed entity keys: ${allowedList.join(", ")}`,
         ].join("\n"),
       },
     ],
@@ -163,7 +174,11 @@ export async function resolveEntity(
   if (!canUseEntityLlm(config)) return fact;
 
   const candidates = await loadCandidates(config, hits, lowThreshold);
-  return disambiguateEntityWithLlm(fact, candidates, config);
+  let registryKeys: string[] = [];
+  if (config.useEntityRegistry) {
+    registryKeys = (await listRegistryEntities(config.db)).map((row) => row.key);
+  }
+  return disambiguateEntityWithLlm(fact, candidates, config, registryKeys);
 }
 
 /** @deprecated Use resolveEntity — kept as alias for config hook naming. */

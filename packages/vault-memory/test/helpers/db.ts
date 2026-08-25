@@ -44,6 +44,14 @@ export function createTestDb(): VaultDb {
       resolution_strategy TEXT,
       created_at INTEGER NOT NULL,
       resolved_at INTEGER
+    );
+
+    CREATE TABLE entities (
+      id TEXT PRIMARY KEY,
+      key TEXT NOT NULL UNIQUE,
+      description TEXT NOT NULL,
+      aliases TEXT,
+      created_at INTEGER NOT NULL
     )
   `);
 

@@ -42,19 +42,64 @@ This fixes drift like `user.abc` vs `user.timezone` when facts are semantically 
 
 **Also:** on `UPDATE`, the stored entity is **preserved** from the target claim (extractor labels cannot rename via merge).
 
-**Not fixed yet:** brand-new facts with no similar existing claims still get whatever entity the LLM invents. A canonical entity registry (P2) would address that.
+## Entity registry (P2)
+
+Optional canonical taxonomy via the `entities` table and `useEntityRegistry: true`.
+
+### Setup
+
+```typescript
+import { Memory, seedEntities, EXAMPLE_ENTITY_SEED } from "vault-memory";
+
+await seedEntities(db, EXAMPLE_ENTITY_SEED);
+// or: seedEntities(db, [
+//   { key: "user.timezone", description: "User timezone or location" },
+// ]);
+
+const memory = new Memory("agent-a", {
+  db,
+  apiKey: process.env.OPENAI_API_KEY,
+  useEntityRegistry: true,
+  entityRegistryAutoRegister: true, // default — register valid new: keys on first use
+});
+```
+
+### Constrained extraction
+
+When the registry is enabled, the extraction prompt includes known keys. The LLM must:
+
+- Pick an **exact key** from the registry when the fact fits, or
+- Use `new:user.<domain>` for genuinely new subjects
+
+Post-extraction validation rejects unknown keys without the `new:` prefix and keys that fail `entityKeyPattern` (default: `user.<lowercase.dotted>`).
+
+After `resolveEntity()`, `ensureEntityInRegistry()` auto-registers new valid keys (unless `entityRegistryAutoRegister: false`).
+
+```typescript
+import { claims, agentAuthority, disputes, entities } from "vault-memory/schema";
+```
+
+Key code: `src/entity-registry.ts`, `src/extract.ts` (registry prompt), `src/memory.ts`.
+
+### Resolution + registry together
+
+| Stage | What it does |
+|-------|----------------|
+| **Registry extraction** | LLM picks from known keys or proposes `new:` |
+| **resolveEntity (P0/P1)** | Aligns to similar existing **claims** by embedding |
+| **ensureEntityInRegistry** | Validates / auto-registers canonical keys |
 
 ```typescript
 const memory = new Memory("agent-a", {
   db,
   apiKey: process.env.OPENAI_API_KEY,
-  entityMatchThreshold: 0.85,           // auto-align (default)
-  entityDisambiguationThreshold: 0.70,  // LLM band floor (default)
-  entityResolutionUseLlm: true,         // set false to skip borderline LLM
+  useEntityRegistry: true,
+  entityMatchThreshold: 0.85,
+  entityDisambiguationThreshold: 0.70,
 });
 ```
 
-Borderline LLM sees the new fact plus top similar claims and must pick from allowed entity keys (extracted + candidates). Invalid keys are rejected by Zod.
+Borderline LLM disambiguation also includes registry keys in the allowed set.
 
 Key code: `src/resolve-entity.ts` (`resolveEntity`, `disambiguateEntityWithLlm`), wired in `src/memory.ts`.
 
@@ -66,7 +111,7 @@ Key code: `src/resolve-entity.ts` (`resolveEntity`, `disambiguateEntityWithLlm`)
 | `resolve.ts` → `EXAMPLE_AUTHORITY_SEED` | Yes — `user.timezone`, `user.mood` | Demo seed data |
 | `apps/cli-agent` → `SHARED_ENTITY_STRATEGIES` | Yes — same entities | CLI demo config |
 | Tests / `verify-consumer.mjs` | Yes — scripted fake LLM | Deterministic tests |
-| Core library runtime | **No fixed taxonomy** | Accepts any entity string; resolution aligns when similar claims exist |
+| Core library runtime | **No fixed taxonomy by default** | Registry optional via `useEntityRegistry` |
 
 ### Config knobs
 
@@ -76,6 +121,9 @@ Key code: `src/resolve-entity.ts` (`resolveEntity`, `disambiguateEntityWithLlm`)
 | `entityDisambiguationThreshold` | LLM band floor (default 0.70) |
 | `entityResolutionUseLlm` | Skip borderline LLM when false |
 | `resolveEntity` | Full override hook |
+| `useEntityRegistry` | Enable canonical entity table + constrained extraction |
+| `entityRegistryAutoRegister` | Auto-insert valid `new:` keys (default true) |
+| `entityKeyPattern` | Regex source for new keys (default `user.*`) |
 
 ## How entity is used after extraction
 

@@ -51,10 +51,24 @@ Audit trail when authority cannot resolve a conflict.
 | `created_at` | timestamp | When opened |
 | `resolved_at` | timestamp | `null` until resolved |
 
+### `entities` (entity registry)
+
+Canonical entity taxonomy for constrained extraction.
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | text PK | Row UUID |
+| `key` | text unique | Canonical entity key, e.g. `user.timezone` |
+| `description` | text | Human/LLM-readable subject description |
+| `aliases` | text | Optional JSON array of alternate labels |
+| `created_at` | timestamp | When registered |
+
+Seed with `seedEntities(db, seeds)` from `vault-memory`. Enable with `useEntityRegistry: true` on `Memory` config.
+
 ## Drizzle import
 
 ```typescript
-import { claims, agentAuthority, disputes } from "vault-memory/schema";
+import { claims, agentAuthority, disputes, entities } from "vault-memory/schema";
 ```
 
 ## Creating tables

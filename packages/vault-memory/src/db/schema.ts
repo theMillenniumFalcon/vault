@@ -34,3 +34,11 @@ export const disputes = sqliteTable("disputes", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   resolvedAt: integer("resolved_at", { mode: "timestamp" }),
 });
+
+export const entities = sqliteTable("entities", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  description: text("description").notNull(),
+  aliases: text("aliases"), // JSON array of alternate labels
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});

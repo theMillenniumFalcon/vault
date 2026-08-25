@@ -46,6 +46,18 @@ export interface MemoryConfig extends LLMConfig, EmbedConfig {
   entityResolutionUseLlm?: boolean;
   /** Override entity resolution (default: similarity-based {@link resolveEntity}). */
   resolveEntity?: EntityResolverFn;
+  /**
+   * Enable canonical entity registry: constrained extraction, key validation,
+   * and optional auto-registration of new keys.
+   */
+  useEntityRegistry?: boolean;
+  /**
+   * When true (default), new keys that pass {@link entityKeyPattern} are
+   * inserted into the registry on first use.
+   */
+  entityRegistryAutoRegister?: boolean;
+  /** Regex source for new entity keys. Default: `user.<domain>` dotted paths. */
+  entityKeyPattern?: string;
 }
 
 export type ResolvedMemoryConfig = MemoryConfig & { vectorStore: VectorStore };

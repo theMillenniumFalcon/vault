@@ -1,4 +1,4 @@
-export { agentAuthority, claims, disputes } from "./db/schema";
+export { agentAuthority, claims, disputes, entities } from "./db/schema";
 export {
   createDefaultOpenAILLM,
   resolveLLM,
@@ -21,7 +21,21 @@ export {
   classifyAgainstOtherAgents,
   classifyAgainstOwnHistory,
 } from "./classify";
-export { extractFacts, getLatestTurn } from "./extract";
+export { extractFacts, getLatestTurn, type ExtractFactsConfig } from "./extract";
+export {
+  DEFAULT_ENTITY_KEY_PATTERN,
+  EXAMPLE_ENTITY_SEED,
+  ensureEntityInRegistry,
+  formatRegistryForPrompt,
+  getRegistryEntity,
+  listRegistryEntities,
+  parseExtractedEntityKey,
+  registerEntity,
+  resolveEntityKeyPattern,
+  seedEntities,
+  validateEntityKey,
+  type EntitySeed,
+} from "./entity-registry";
 export { Memory } from "./memory";
 export { applyCrossAgentResolution, applyOp, syncClaimVectorFromRow } from "./ops";
 export {

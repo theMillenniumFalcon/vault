@@ -10,6 +10,7 @@ import {
   classifyAgainstOwnHistory,
 } from "./classify";
 import { extractFacts } from "./extract";
+import { ensureEntityInRegistry, resolveEntityKeyPattern } from "./entity-registry";
 import { applyCrossAgentResolution, applyOp } from "./ops";
 import { resolveEntity as defaultResolveEntity } from "./resolve-entity";
 import {
@@ -42,6 +43,14 @@ export class Memory {
     for (const fact of facts) {
       const embedding = await this.embed(fact.text);
       const resolvedFact = await resolveEntityFn(fact, embedding, this.config);
+
+      if (this.config.useEntityRegistry) {
+        await ensureEntityInRegistry(this.config.db, resolvedFact.entity, {
+          autoRegister: this.config.entityRegistryAutoRegister ?? true,
+          description: resolvedFact.text,
+          pattern: resolveEntityKeyPattern(this.config.entityKeyPattern),
+        });
+      }
 
       const ownResult = await classifyAgainstOwnHistory(
         resolvedFact,
