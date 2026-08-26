@@ -29,7 +29,7 @@ End-to-end flow for `Memory.add()` and `Memory.search()` in `vault-memory`. This
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ 3. RESOLVE ENTITY   resolveEntity() — align label with similar claims   │
-│    [optional]       LLM disambiguation in borderline similarity band   │
+│    [optional]       LLM disambiguation in borderline similarity band    │
 └─────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -45,7 +45,7 @@ End-to-end flow for `Memory.add()` and `Memory.search()` in `vault-memory`. This
                                     │
                     ┌───────────────┼───────────────┐
                     │               │               │
-                 NOOP          UPDATE/REPLACE        ADD
+                   NOOP        UPDATE/REPLACE      ADD
                     │               │               │
                     ▼               ▼               ▼
                  [stop]      applyOp()      ┌──────────────┐
@@ -55,7 +55,7 @@ End-to-end flow for `Memory.add()` and `Memory.search()` in `vault-memory`. This
                     │                              │
                     │              ┌───────────────┼───────────────┐
                     │              │               │               │
-                    │            no conflict    recency/authority   │
+                    │            no conflict    recency/authority  │
                     │              │               │               │
                     │              ▼               ▼               ▼
                     │           ADD          REPLACE+supersede   DISPUTE
