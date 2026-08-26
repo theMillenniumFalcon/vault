@@ -9,6 +9,7 @@ Internal documentation for the Vault monorepo and `vault-memory` npm package.
 | [Team onboarding](./onboarding.md) | **Full pointwise walkthrough** — explain Vault to a new teammate |
 | [Getting started](./getting-started.md) | Install, first run, quick commands |
 | [Architecture](./architecture.md) | How the system fits together end-to-end |
+| [Pipeline](./pipeline.md) | **Full `Memory.add()` / `search()` reference** with examples |
 | [Entities](./entities.md) | How `user.timezone`-style keys are chosen and used |
 
 ## Core concepts

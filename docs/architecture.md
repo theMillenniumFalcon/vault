@@ -13,14 +13,20 @@ How Vault's memory pipeline works from message to stored claim.
 | `ops` | `src/ops.ts` | Write claim rows + sync vector index |
 | `search` | `src/search.ts` | Embed query → vector search → hydrate + decay |
 | Vector store | `src/vector-store/` | FAISS (default), MemoryVectorStore, PgVectorStore |
-| Schema | `src/db/schema.ts` | `claims`, `agent_authority`, `disputes` |
+| Schema | `src/db/schema.ts` | `claims`, `agent_authority`, `disputes`, `entities` |
 
 ## `Memory.add()` pipeline
+
+Full step-by-step reference with diagrams and worked examples: **[Pipeline](./pipeline.md)**.
+
+Summary:
 
 ```
 messages
   → extractFacts (LLM, latest user turn only)
   → embed (per fact)
+  → resolveEntity (align entity label — optional similarity + LLM)
+  → ensureEntityInRegistry (optional, useEntityRegistry)
   → classifyAgainstOwnHistory (vector search + LLM → ADD | UPDATE | REPLACE | NOOP)
   → if ADD: classifyAgainstOtherAgents (entity-scoped cross-agent search + strategy)
   → apply op (write claim row + sync vector index)
@@ -74,7 +80,7 @@ See [Multi-agent conflict](./multi-agent-conflict.md) for strategy details.
           ▼                    ▼
    ┌──────────────────────────────────────┐
    │  Shared DB (SQLite file or Postgres) │
-   │  claims · agent_authority · disputes │
+   │  claims · agent_authority · disputes · entities │
    └──────────────────────────────────────┘
 ```
 

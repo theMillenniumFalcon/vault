@@ -207,6 +207,7 @@ Multiple agent processes → multiple FAISS indexes → one shared DB. SQL is ca
 
 | Topic | Doc |
 |-------|-----|
+| Pipeline & examples | [pipeline.md](./pipeline.md) |
 | Install & first run | [getting-started.md](./getting-started.md) |
 | Pipeline & components | [architecture.md](./architecture.md) |
 | Entity strings | [entities.md](./entities.md) |
