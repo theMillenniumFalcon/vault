@@ -15,6 +15,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#features", label: "Features" },
+  { href: "/#get-started", label: "Get started" },
   { href: "/#faq", label: "FAQ" },
   { href: GITHUB_URL, label: "GitHub", external: true },
 ];

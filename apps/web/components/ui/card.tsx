@@ -88,16 +88,6 @@ const CardTitle = React.forwardRef<
 ));
 CardTitle.displayName = "CardTitle";
 
-// --- Card Price ---
-
-const CardPrice = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("mt-4 mb-3", className)} {...props} />
-));
-CardPrice.displayName = "CardPrice";
-
 // --- Card Description ---
 
 const CardDescription = React.forwardRef<
@@ -145,7 +135,6 @@ export {
   CardHeader,
   CardTitle,
   CardBadge,
-  CardPrice,
   CardDescription,
   CardContent,
   CardFooter,

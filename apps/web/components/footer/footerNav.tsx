@@ -34,8 +34,8 @@ export const FooterNav = () => (
         <div className="flex flex-col gap-2">
           <NavLink href="/#how-it-works">How it works</NavLink>
           <NavLink href="/#features">Features</NavLink>
+          <NavLink href="/#get-started">Get started</NavLink>
           <NavLink href="/#faq">FAQ</NavLink>
-          <NavLink href="/#pricing">Deployment</NavLink>
         </div>
       </div>
       <div className="flex flex-col gap-3">

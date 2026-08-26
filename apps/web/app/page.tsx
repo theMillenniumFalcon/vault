@@ -5,7 +5,7 @@ import { FAQ } from "@/components/faq";
 import { Features } from "@/components/features";
 import { Hero } from "@/components/hero";
 import { HowItWorks } from "@/components/how-it-works";
-import { Pricing } from "@/components/pricing";
+import { GetStarted } from "@/components/get-started";
 import { Skills } from "@/components/skills";
 
 export default function Home() {
@@ -19,9 +19,9 @@ export default function Home() {
       <Separator />
       <Features />
       <Separator />
-      <FAQ />
+      <GetStarted />
       <Separator />
-      <Pricing />
+      <FAQ />
       <Separator />
       <CTA />
     </>

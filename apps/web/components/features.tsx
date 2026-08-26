@@ -1,4 +1,4 @@
-import { Archive, GitMerge, KeyRound, Search, Tags, Users, Workflow } from "lucide-react";
+import { Archive, GitMerge, Search, Tags, Users, Workflow } from "lucide-react";
 
 import {
   Card,
@@ -108,26 +108,17 @@ const structuredFeature = {
   eyebrow: "Structured facts",
   title: "Facts, not chunks.",
   description:
-    "Extraction returns entity + type (semantic or episodic). Enable the optional entity registry so keys stay canonical — user.timezone, not a new label every turn.",
-  snippet: 'useEntityRegistry: true // seedEntities(db, [...])',
+    "Extraction returns entity + type (semantic or episodic). Optional registry seeds canonical keys — user.timezone, not a new label every turn.",
+  snippet: 'seedEntities(db, [{ key: "user.timezone", ... }])',
 };
 
 const classifyFeature = {
   icon: Workflow,
-  eyebrow: "Classification",
-  title: "Four ops, one clean store.",
+  eyebrow: "Resolve & classify",
+  title: "Align keys, then write.",
   description:
-    "Entity resolution aligns keys before classify (vector match + optional LLM). Then ADD, UPDATE, REPLACE, or NOOP within an agent; cross-agent recency or authority on the same entity.",
-  snippet: 'entityStrategies: { "user.timezone": "authority" }',
-};
-
-const entityFeature = {
-  icon: KeyRound,
-  eyebrow: "Entity resolution",
-  title: "Stable entity keys.",
-  description:
-    "Similarity alignment, borderline LLM disambiguation, and registry validation stop user.xyz vs user.timezone drift — so conflict policy runs on the right subject.",
-  snippet: "entityMatchThreshold: 0.85",
+    "Entity resolution matches similar keys (vector + optional LLM) before classify runs ADD, UPDATE, REPLACE, or NOOP. Cross-agent conflicts use recency or authority per entity.",
+  snippet: 'entityStrategies: { "user.*": "authority" }',
 };
 
 const retrievalFeature = {
@@ -209,9 +200,9 @@ export const Features = () => (
               </Heading>
               <CardDescription>{feature.description}</CardDescription>
             </CardContent>
-              <CardFooter>
+            <CardFooter>
               <CodeSnippet code={feature.snippet} />
-              </CardFooter>
+            </CardFooter>
           </Card>
         );
       })}
@@ -280,24 +271,6 @@ export const Features = () => (
         </CardContent>
         <CardFooter>
           <CodeSnippet code={retrievalFeature.snippet} />
-        </CardFooter>
-      </Card>
-
-      <Card className="gap-4 border-b border-dashed dark:border-neutral-700/50">
-        <CardContent>
-          <IconBox variant="static" className="mb-4 w-fit">
-            <KeyRound className="h-4 w-4" />
-          </IconBox>
-          <CardHeader>
-            <CardTitle>{entityFeature.eyebrow}</CardTitle>
-          </CardHeader>
-          <Heading as="h3" size="h4" className="mb-2">
-            {entityFeature.title}
-          </Heading>
-          <CardDescription>{entityFeature.description}</CardDescription>
-        </CardContent>
-        <CardFooter>
-          <CodeSnippet code={entityFeature.snippet} />
         </CardFooter>
       </Card>
 
