@@ -11,10 +11,10 @@ const steps = [
   },
   {
     number: "02",
-    title: "Classify & resolve",
+    title: "Resolve & classify",
     description:
-      "Each fact is classified against existing memory: ADD, UPDATE, REPLACE, or NOOP. Cross-agent conflicts resolve automatically via configurable strategies like recency.",
-    snippet: "// REPLACE supersedes contradictions",
+      "Entity resolution aligns keys to existing claims (vector match, optional LLM). Then each fact is classified: ADD, UPDATE, REPLACE, or NOOP. Cross-agent conflicts use recency or authority per entity.",
+    snippet: 'entityStrategies: { "user.*": "authority" }',
   },
   {
     number: "03",

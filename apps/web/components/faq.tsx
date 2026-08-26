@@ -38,13 +38,19 @@ const faqs = [
     id: "multi-agent",
     question: "How does multi-agent memory work?",
     answer:
-      "Multiple agents can share one database. When agent B stores a fact that conflicts with agent A's claim on the same entity, Vault's cross-agent pass resolves it — recency wins by default, superseding the older claim.",
+      "Multiple agents share one database. Vault aligns entity keys before comparing claims, then runs a cross-agent pass: recency supersedes by default, or authority when you configure entityStrategies. Equal authority on a conflict marks the claim disputed instead of silently overwriting.",
   },
   {
     id: "contradictions",
     question: "What happens when facts contradict?",
     answer:
-      "Within the same agent, the classifier returns REPLACE and marks the old claim as superseded. Across agents, the recency strategy supersedes conflicting active claims. Restated facts return NOOP so nothing duplicates.",
+      "Within the same agent, the classifier returns REPLACE and marks the old claim superseded. Across agents, recency or authority applies per entity (wildcards like user.* supported). Restated facts return NOOP. Equal authority conflicts surface as disputed claims with an audit trail.",
+  },
+  {
+    id: "entities",
+    question: "How does entity resolution work?",
+    answer:
+      "Extractors can drift labels (user.xyz vs user.timezone). Before classify, Vault embeds the entity string and aligns it to similar existing keys above entityMatchThreshold. Borderline scores can use LLM disambiguation. Optionally enable useEntityRegistry to constrain extraction to canonical keys you seed in the database.",
   },
   {
     id: "cli-agent",

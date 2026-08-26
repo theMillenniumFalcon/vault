@@ -21,7 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Vault",
   description:
-    "Agent-attributed memory for AI agents — extract, store, retrieve, and resolve contradictions in conversation facts.",
+    "Agent-attributed memory for AI agents — extract structured facts, resolve entity keys, classify contradictions, and search semantically in your own database.",
 };
 
 export default function RootLayout({

@@ -19,8 +19,8 @@ export const Hero = () => (
       </Heading>
 
       <p className="mb-8 max-w-lg text-sm leading-relaxed text-neutral-400 md:text-base">
-        Vault extracts facts from conversations, detects contradictions, and
-        retrieves them semantically —{" "}
+        Vault extracts structured facts, resolves entity keys across agents,
+        and retrieves memory semantically —{" "}
         <span className="whitespace-nowrap text-neutral-100 underline underline-offset-4">
           with your own database.
         </span>

@@ -1,4 +1,4 @@
-import { Archive, GitMerge, Search, Tags, Users, Workflow } from "lucide-react";
+import { Archive, GitMerge, KeyRound, Search, Tags, Users, Workflow } from "lucide-react";
 
 import {
   Card,
@@ -14,7 +14,7 @@ import { Heading } from "@/components/ui/heading";
 import { IconBox } from "@/components/ui/icon-box";
 
 type ClaimRow = {
-  status: "active" | "superseded";
+  status: "active" | "superseded" | "disputed";
   entity: string;
   text: string;
   agent: string;
@@ -66,7 +66,9 @@ function ClaimTable({ rows }: { rows: ClaimRow[] }) {
                   className={
                     row.status === "active"
                       ? "text-neutral-100"
-                      : "text-neutral-600 line-through"
+                      : row.status === "disputed"
+                        ? "text-amber-500/90"
+                        : "text-neutral-600 line-through"
                   }
                 >
                   {row.status}
@@ -106,8 +108,8 @@ const structuredFeature = {
   eyebrow: "Structured facts",
   title: "Facts, not chunks.",
   description:
-    "Extraction returns records with entity and type (semantic or episodic). That structure is what lets Vault compare new input against existing memory instead of blindly appending.",
-  snippet: '{ entity: "user.diet", type: "semantic", ... }',
+    "Extraction returns entity + type (semantic or episodic). Enable the optional entity registry so keys stay canonical — user.timezone, not a new label every turn.",
+  snippet: 'useEntityRegistry: true // seedEntities(db, [...])',
 };
 
 const classifyFeature = {
@@ -115,8 +117,17 @@ const classifyFeature = {
   eyebrow: "Classification",
   title: "Four ops, one clean store.",
   description:
-    "Each fact is classified before write: ADD for new, UPDATE for refinements, REPLACE for contradictions, NOOP when nothing changed. No duplicate rows from restated facts.",
-  snippet: '{ op: "REPLACE", targetClaimId: "claim-1" }',
+    "Entity resolution aligns keys before classify (vector match + optional LLM). Then ADD, UPDATE, REPLACE, or NOOP within an agent; cross-agent recency or authority on the same entity.",
+  snippet: 'entityStrategies: { "user.timezone": "authority" }',
+};
+
+const entityFeature = {
+  icon: KeyRound,
+  eyebrow: "Entity resolution",
+  title: "Stable entity keys.",
+  description:
+    "Similarity alignment, borderline LLM disambiguation, and registry validation stop user.xyz vs user.timezone drift — so conflict policy runs on the right subject.",
+  snippet: "entityMatchThreshold: 0.85",
 };
 
 const retrievalFeature = {
@@ -133,7 +144,7 @@ const attributionFeature = {
   eyebrow: "Lifecycle",
   title: "Every claim has a trail.",
   description:
-    "Claims carry sourceAgent, conversationId, and status. Superseded facts stay in the database for audit, but search only returns active memory for your agent.",
+    "Claims carry sourceAgent, conversationId, and status (active, superseded, or disputed). Superseded facts stay for audit; search returns active memory for your agent.",
 };
 
 export const Features = () => (
@@ -148,9 +159,9 @@ export const Features = () => (
           <span className="text-neutral-400">Not another chunk store.</span>
         </Heading>
         <p className="max-w-lg text-sm leading-relaxed text-neutral-500">
-          Most agent memory is append-only. Vault classifies every fact before
-          it lands — so contradictions resolve and restatements don&apos;t bloat
-          your database.
+          Most agent memory is append-only. Vault resolves entity keys, classifies
+          every fact before it lands, and applies per-entity conflict policy — so
+          contradictions resolve and restatements don&apos;t bloat your database.
         </p>
       </div>
 
@@ -220,32 +231,33 @@ export const Features = () => (
             <span className="text-neutral-400">Resolved conflicts.</span>
           </Heading>
           <CardDescription className="mb-8 text-sm">
-            Multiple agents can write to the same database. When agent B stores
-            a fact that conflicts with agent A on the same entity, the cross-agent
-            pass supersedes the older claim. Recency wins by default.
+            Multiple agents share one database. When agent B contradicts agent A on
+            the same entity, Vault resolves via recency or authority — higher-trust
+            agents win; equal authority produces a disputed claim and audit row,
+            not a silent overwrite.
           </CardDescription>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="border border-dashed border-neutral-800 p-4">
               <p className="mb-3 font-mono text-[10px] tracking-widest text-neutral-500 uppercase">
-                agent-a writes
+                agent-a (scheduling)
               </p>
               <p className="font-mono text-xs text-neutral-300">
                 user.timezone → &quot;The user is in PST&quot;
               </p>
               <p className="mt-2 font-mono text-[11px] text-neutral-500">
-                status: active
+                status: active · authority 0.9
               </p>
             </div>
             <div className="border border-dashed border-neutral-800 p-4">
               <p className="mb-3 font-mono text-[10px] tracking-widest text-neutral-500 uppercase">
-                agent-b writes
+                agent-b (chat)
               </p>
               <p className="font-mono text-xs text-neutral-300">
                 user.timezone → &quot;The user is in EST&quot;
               </p>
-              <p className="mt-2 font-mono text-[11px] text-neutral-500">
-                agent-a claim → superseded
+              <p className="mt-2 font-mono text-[11px] text-amber-500/80">
+                status: disputed · authority 0.2
               </p>
             </div>
           </div>
@@ -271,20 +283,38 @@ export const Features = () => (
         </CardFooter>
       </Card>
 
+      <Card className="gap-4 border-b border-dashed dark:border-neutral-700/50">
+        <CardContent>
+          <IconBox variant="static" className="mb-4 w-fit">
+            <KeyRound className="h-4 w-4" />
+          </IconBox>
+          <CardHeader>
+            <CardTitle>{entityFeature.eyebrow}</CardTitle>
+          </CardHeader>
+          <Heading as="h3" size="h4" className="mb-2">
+            {entityFeature.title}
+          </Heading>
+          <CardDescription>{entityFeature.description}</CardDescription>
+        </CardContent>
+        <CardFooter>
+          <CodeSnippet code={entityFeature.snippet} />
+        </CardFooter>
+      </Card>
+
       <Card className="gap-4">
-            <CardContent>
-              <IconBox variant="static" className="mb-4 w-fit">
+        <CardContent>
+          <IconBox variant="static" className="mb-4 w-fit">
             <Archive className="h-4 w-4" />
-              </IconBox>
-              <CardHeader>
+          </IconBox>
+          <CardHeader>
             <CardTitle>{attributionFeature.eyebrow}</CardTitle>
-              </CardHeader>
-              <Heading as="h3" size="h4" className="mb-2">
+          </CardHeader>
+          <Heading as="h3" size="h4" className="mb-2">
             {attributionFeature.title}
-              </Heading>
+          </Heading>
           <CardDescription>{attributionFeature.description}</CardDescription>
-            </CardContent>
-          </Card>
+        </CardContent>
+      </Card>
     </div>
   </div>
 );
