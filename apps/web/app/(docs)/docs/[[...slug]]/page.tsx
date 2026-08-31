@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
+import remarkGfm from "remark-gfm";
 
 import { docsMdxComponents } from "@/components/docs/mdx";
 import { getAllDocPages, pageToHref } from "@/lib/docs/navigation";
@@ -54,7 +55,15 @@ export default async function DocsPage({ params }: PageProps) {
           </p>
         ) : null}
       </header>
-      <MDXRemote source={doc.content} components={docsMdxComponents} />
+      <MDXRemote
+        source={doc.content}
+        components={docsMdxComponents}
+        options={{
+          mdxOptions: {
+            remarkPlugins: [remarkGfm],
+          },
+        }}
+      />
     </article>
   );
 }
