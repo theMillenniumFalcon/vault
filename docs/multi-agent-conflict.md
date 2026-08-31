@@ -120,7 +120,20 @@ A row is inserted into **`disputes`** only when **all** of the following are tru
 | **Incumbent claim(s)** | Remain `active` and searchable |
 | **`disputes` row** | Links `claim_a_id` (incoming) and `claim_b_id` (incumbent); `resolved_op` and `resolved_at` are **null** |
 
-**Disputes are not auto-resolved today.** There is no `resolveDispute()` API yet.
+**Disputes are not auto-resolved.** Use `listOpenDisputes()` and `resolveDispute()` at the app layer.
+
+### Resolving disputes
+
+```typescript
+import { listOpenDisputes, resolveDispute } from "vault-memory";
+
+const open = await listOpenDisputes(db, { entity: "user.timezone" });
+// Surface open[0].claimA vs open[0].claimB to the user or your app policy
+
+await resolveDispute(db, vectorStore, open[0].id, winningClaimId);
+```
+
+Promotes the winner to `active` (re-indexed), supersedes the loser, and stamps `resolved_op` / `resolved_at` on the dispute row.
 
 ### When disputes are **not** written
 
@@ -183,9 +196,6 @@ Conflict resolution picks winners; **ingestion guardrails** (rate limits, dedup)
 
 ## Roadmap (not implemented)
 
-- `consensus` — throws "not implemented"
-- `llm-judge` — throws "not implemented"
-- `resolveDispute()` — human or app-layer workflow
 - Enhanced auto-resolve rules (authority gap + time + repeat disagreements) — design only in package docs
 
 ---

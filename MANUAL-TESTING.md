@@ -309,7 +309,7 @@ Then run the scripts from `packages/vault-memory/scripts/verify-consumer.mjs` lo
 | Search-time decay | `packages/vault-memory/test/search.test.ts` (hard to see manually) |
 | `MemoryVectorStore` opt-out | `verify:consumer` (uses it in scratch npm install) |
 | `PgVectorStore` | Not in CLI demo — needs Postgres + `vault-memory/pg` |
-| `consensus` / `llm-judge` | **Not implemented** — tests confirm they throw |
+| `listOpenDisputes` / `resolveDispute` | `packages/vault-memory/test/disputes.test.ts` |
 
 ---
 

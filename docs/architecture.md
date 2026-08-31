@@ -108,8 +108,7 @@ Cross-agent search: use the exported `search(db, vectorStore, embed, query, opts
 
 ## What's not built yet
 
-- `consensus` and `llm-judge` resolution strategies (throw if called)
-- `resolveDispute()` API — disputes stay open until app layer handles them
+- Enhanced auto-resolve rules (authority gap + time + repeat disagreements) — design only
 - Approximate FAISS indexes (IVF/HNSW) — not needed until 10k+ claims
 
 ## Key code entry points

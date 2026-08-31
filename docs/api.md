@@ -48,7 +48,23 @@ interface MemoryConfig {
 }
 ```
 
-`ResolutionStrategy`: `"recency" | "authority" | "consensus" | "llm-judge"` (last two throw if used).
+`ResolutionStrategy`: `"recency" | "authority"`.
+
+## Dispute resolution
+
+When authority cannot pick a winner, claims are parked as `disputed` and a row is written to `disputes`. Resolve at the app layer:
+
+```typescript
+import { listOpenDisputes, resolveDispute } from "vault-memory";
+
+const open = await listOpenDisputes(db, { entity: "user.timezone" });
+await resolveDispute(db, vectorStore, open[0].id, winningClaimId);
+```
+
+| Export | Use |
+|--------|-----|
+| `listOpenDisputes` | Poll unresolved disputes (optionally filter by entity) |
+| `resolveDispute` | Promote winner to `active`, supersede loser, close dispute row |
 
 ## Cross-agent search
 
@@ -107,6 +123,7 @@ await vectorStore.rebuild(db);
 | `classifyAgainstOtherAgents` | Custom cross-agent flow |
 | `resolveConflict` | Test / extend resolution strategies |
 | `applyOp` / `applyCrossAgentResolution` | Direct op application |
+| `listOpenDisputes` / `resolveDispute` | App-layer dispute workflow |
 | `recencyWeightedScore` | Decay scoring |
 
 ## Types

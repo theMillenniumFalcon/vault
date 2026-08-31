@@ -229,7 +229,7 @@ describe("multi-agent conflict harness", () => {
       expect(result[0]?.text.toLowerCase()).toContain("pacific");
     });
 
-    test("deliberately ambiguous: equal authority → DISPUTE (baseline before llm-judge)", async () => {
+    test("deliberately ambiguous: equal authority → DISPUTE", async () => {
       const db = createTestDb();
       const vectorStore = createTestVectorStore();
       await insertAuthority(db, [
@@ -271,8 +271,7 @@ describe("multi-agent conflict harness", () => {
       );
 
       // Equal weights cannot beatAll (strict >), so we dispute.
-      // Recording this baseline: llm-judge is NOT required yet for equal-weight
-      // ties — DISPUTE + audit row is enough until a harness case needs judgment.
+      // App layer resolves via listOpenDisputes + resolveDispute.
       expect(added[0]?.status).toBe("disputed");
       expect(await listDisputes(db)).toHaveLength(1);
 
@@ -287,7 +286,7 @@ describe("multi-agent conflict harness", () => {
       expect(active[0]?.text).toContain("PST");
     });
 
-    test("consensus baseline: two agents agree → recency REPLACE, no confidence bump", async () => {
+    test("agreeing agents: recency REPLACE, no confidence bump", async () => {
       const db = createTestDb();
       const vectorStore = createTestVectorStore();
 
@@ -312,11 +311,7 @@ describe("multi-agent conflict harness", () => {
         "conv1",
       );
 
-      // Current behavior without a consensus strategy: agreeing writers still
-      // REPLACE via recency. Confidence does not increase. Decision: do NOT
-      // implement consensus/llm-judge yet — no harness case requires them;
-      // agreement-as-REPLACE is acceptable until a real product case needs
-      // multi-writer reinforcement.
+      // Agreeing writers still REPLACE via recency. Confidence does not increase.
       expect(added[0]?.status).toBe("active");
       expect(added[0]?.confidence).toBe(1);
 

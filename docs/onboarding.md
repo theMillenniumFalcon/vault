@@ -129,7 +129,7 @@ Full diagram: [architecture.md](./architecture.md).
     - agent-b's claim is stored as `disputed`
     - search returns agent-a's PST claim as the active truth
 
-36. **`consensus` and `llm-judge` strategies** — designed but not built. Deferred until real harness cases prove recency/authority aren't enough.
+36. **Dispute resolution** — when authority ties, claims are parked as `disputed`. Poll `listOpenDisputes(db)` and call `resolveDispute(db, vectorStore, disputeId, winningClaimId)` from your app (human, policy, or your own LLM).
 
 Deep dive: [multi-agent-conflict.md](./multi-agent-conflict.md).
 

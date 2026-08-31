@@ -274,7 +274,7 @@ Each agent process holds its own FAISS index in memory. When using a shared SQLi
 | `recency` + `authority` strategies | Shipped |
 | Synthetic conflict test harness | Shipped |
 | CLI multi-agent demo | Shipped |
-| `consensus` / `llm-judge` strategies | Not implemented (deferred per harness) |
+| `listOpenDisputes` + `resolveDispute` | Shipped |
 | `vault-memory@0.2.0` npm publish + consumer two-agent test | Shipped on npm |
 | Approximate FAISS indexes (IVF/HNSW) | Not needed until 10k+ claims |
 

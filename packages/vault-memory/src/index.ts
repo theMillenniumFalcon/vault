@@ -39,6 +39,13 @@ export {
 export { Memory } from "./memory";
 export { applyCrossAgentResolution, applyOp, syncClaimVectorFromRow } from "./ops";
 export {
+  listOpenDisputes,
+  resolveDispute,
+  type Dispute,
+  type OpenDispute,
+  type ResolvedDispute,
+} from "./disputes";
+export {
   DEFAULT_ENTITY_DISAMBIGUATION_THRESHOLD,
   DEFAULT_ENTITY_MATCH_THRESHOLD,
   defaultResolveEntity,

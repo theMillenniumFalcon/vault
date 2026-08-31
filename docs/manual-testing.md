@@ -155,7 +155,7 @@ Expected: still returns agent-a PST (rebuild on startup works).
 | Search-time decay | `test/search.test.ts` |
 | `MemoryVectorStore` opt-out | `verify:consumer` |
 | `PgVectorStore` | Not in CLI — needs Postgres |
-| `consensus` / `llm-judge` | Not implemented |
+| `listOpenDisputes` / `resolveDispute` | `test/disputes.test.ts` |
 
 ---
 

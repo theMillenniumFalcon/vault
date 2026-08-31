@@ -4,11 +4,7 @@ import { agentAuthority } from "./db/schema";
 import type { VaultDb } from "./db/types";
 import type { CrossAgentClassifyResult, ExtractedFact, ScoredClaim } from "./types";
 
-export type ResolutionStrategy =
-  | "recency"
-  | "authority"
-  | "consensus"
-  | "llm-judge";
+export type ResolutionStrategy = "recency" | "authority";
 
 export type Resolution =
   | { op: "ADD" }
@@ -68,8 +64,6 @@ export async function resolveConflict(
       return resolveRecency(fact, conflicts);
     case "authority":
       return resolveAuthority(fact, agentId, conflicts, config);
-    default:
-      throw new Error(`Resolution strategy not implemented: ${strategy}`);
   }
 }
 

@@ -116,7 +116,7 @@ A row is inserted into **`disputes`** only when **all** of the following are tru
 | **Incumbent claim(s)** | Remain `active` and searchable |
 | **`disputes` row** | Links `claim_a_id` (incoming) and `claim_b_id` (incumbent); `resolved_op` and `resolved_at` are **null** |
 
-**Disputes are not auto-resolved today.** There is no `resolveDispute()` API yet — rows stay open until a future consumer closes them.
+**Disputes are not auto-resolved.** Use `listOpenDisputes()` and `resolveDispute()` at the app layer.
 
 ### When disputes are **not** written
 
@@ -127,18 +127,16 @@ A row is inserted into **`disputes`** only when **all** of the following are tru
 
 ---
 
-## Recommended dispute resolution (not implemented)
+## Recommended dispute resolution
 
-When authority refuses to guess, prefer **user confirmation** at the app layer:
+When authority refuses to guess, resolve at the app layer (human confirmation, app policy, or your own LLM):
 
-1. Poll `disputes` where `resolved_at IS NULL`
+1. Poll open disputes: `listOpenDisputes(db, { entity?: string })`
 2. Surface both claims to the user ("Calendar says PST, you said EST — which is right?")
-3. Call a future `resolveDispute(disputeId, winningClaimId)` that:
-   - Promotes winner to `active` (re-index)
+3. Call `resolveDispute(db, vectorStore, disputeId, winningClaimId)`:
+   - Promotes winner to `active` (re-indexed in vector store)
    - Marks loser `superseded`
-   - Sets `resolved_op` / `resolved_at` on the dispute row
-
-Avoid jumping to `llm-judge` first for user-facing facts — if authority wouldn't overwrite a trusted claim, another model guess has the same trust problem.
+   - Sets `resolved_op` (winning claim id) and `resolved_at` on the dispute row
 
 ---
 
@@ -212,10 +210,9 @@ Conflict resolution picks winners; **ingestion guardrails** prevent flooding.
 
 ---
 
-## Roadmap strategies (not implemented)
+## Roadmap (not implemented)
 
-- `consensus` — throws "not implemented"
-- `llm-judge` — throws "not implemented"; disputes table is intended as input for a future judge or human workflow
+- Enhanced auto-resolve rules (authority gap + time + repeat disagreements) — design only above
 
 ---
 

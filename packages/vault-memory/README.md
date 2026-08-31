@@ -214,7 +214,14 @@ Cross-agent search (all agents): import `search` from `vault-memory` and pass `d
 | **`recency`** (default) | Newest claim supersedes conflicting active claims from other agents |
 | **`authority`** | Incoming agent must beat every conflicting agent's weight on that entity; else **DISPUTE** |
 
-Open disputes are recorded in the `disputes` table for audit.
+Open disputes are recorded in the `disputes` table. Resolve them at the app layer:
+
+```typescript
+import { listOpenDisputes, resolveDispute } from "vault-memory";
+
+const open = await listOpenDisputes(db);
+await resolveDispute(db, vectorStore, open[0].id, winningClaimId);
+```
 
 ## License
 

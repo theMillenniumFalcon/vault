@@ -174,14 +174,4 @@ describe("resolveConflict", () => {
 
     expect(result).toEqual({ op: "DISPUTE", conflictingClaimId: "a-claim" });
   });
-
-  test("consensus and llm-judge are not implemented yet", async () => {
-    const config = createConfig();
-    await expect(
-      resolveConflict(fact, "agent-a", [], "consensus", config),
-    ).rejects.toThrow(/not implemented/);
-    await expect(
-      resolveConflict(fact, "agent-a", [], "llm-judge", config),
-    ).rejects.toThrow(/not implemented/);
-  });
 });
