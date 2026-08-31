@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { DocsCodeBlock } from "@/components/docs/code-block";
+
 import {
   BookOpen,
   Database,
@@ -128,12 +130,7 @@ export const docsMdxComponents: MDXComponents = {
       {...props}
     />
   ),
-  pre: (props) => (
-    <pre
-      className="mb-6 overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-950 p-4 font-mono text-xs leading-6 text-neutral-300"
-      {...props}
-    />
-  ),
+  pre: ({ children }) => <DocsCodeBlock>{children}</DocsCodeBlock>,
   table: (props) => (
     <div className="mb-6 overflow-x-auto">
       <table className="w-full border-collapse text-left text-sm" {...props} />
