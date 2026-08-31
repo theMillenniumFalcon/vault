@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Syne } from "next/font/google";
 
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
-
 import "./globals.css";
 
 const syne = Syne({
@@ -19,7 +16,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vault",
+  title: {
+    default: "Vault",
+    template: "%s · Vault",
+  },
   description:
     "Agent-attributed memory for AI agents — extract structured facts, resolve entity keys, classify contradictions, and search semantically in your own database.",
 };
@@ -30,17 +30,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth dark">
       <body
-        className={`${syne.variable} ${jetbrainsMono.variable} flex min-h-screen flex-col antialiased`}
+        className={`${syne.variable} ${jetbrainsMono.variable} min-h-screen bg-[#0a0a0a] text-[#ededed] antialiased`}
       >
-        <Header />
-        <main className="flex-1 bg-black/80">
-          <div className="mx-auto box-border w-[1200px] border-x border-dashed border-neutral-700/50 max-2xl:w-[1100px] max-xl:w-[900px] max-lg:w-[700px] max-md:w-[500px] max-sm:w-[400px]">
-            {children}
-          </div>
-        </main>
-        <Footer />
+        {children}
       </body>
     </html>
   );

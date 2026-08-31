@@ -1,0 +1,46 @@
+---
+title: Introduction
+description: Agent-attributed memory for AI agents with semantic search and multi-agent conflict resolution.
+---
+
+Vault is an open-source memory layer for AI agents. It extracts structured facts from conversation, stores them in **your** database, and retrieves them with semantic search — with first-class support for **multiple agents** writing to the same store.
+
+Most agent memory is append-only: new facts pile on, contradictions get duplicated, and last-write-wins hides who said what. Vault treats memory as **claims** with attribution, lifecycle, and conflict policy.
+
+## Why Vault
+
+<CardGroup cols={2}>
+  <Card title="Structured facts" icon="tags">
+    Extraction returns `entity`, `text`, and `type` (semantic or episodic) — not raw chunks.
+  </Card>
+  <Card title="Two-pass classify" icon="code-branch">
+    Reconcile within an agent first (ADD / UPDATE / REPLACE / NOOP), then across agents.
+  </Card>
+  <Card title="Multi-agent policy" icon="users">
+    `recency` or `authority` per entity — disputes when trust cannot pick a winner.
+  </Card>
+  <Card title="Your database" icon="database">
+    Drizzle + SQLite or Postgres. FAISS vector index locally; SQL is source of truth.
+  </Card>
+</CardGroup>
+
+## When to use Vault
+
+Vault fits when you have:
+
+- Multiple agents (scheduling, chat, tools) sharing one memory store
+- Facts that can contradict or refine over time
+- A need for audit trails (`superseded`, `disputed`) instead of silent overwrites
+
+For a single agent with simple append-only notes, a lighter store may be enough. Vault shines when **accuracy and attribution** matter.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/docs/quickstart">
+    Install `vault-memory` and store your first fact in minutes.
+  </Card>
+  <Card title="Multi-agent" icon="users" href="/docs/guides/multi-agent-setup">
+    Seed authority weights and run the timezone conflict demo.
+  </Card>
+</CardGroup>

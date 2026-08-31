@@ -1,0 +1,42 @@
+---
+title: Claims and entities
+description: How Vault models facts, entity keys, and claim lifecycle.
+---
+
+## Claims
+
+A **claim** is one structured fact Vault stores:
+
+| Field | Role |
+| --- | --- |
+| `entity` | Subject key, e.g. `user.diet`, `user.timezone` |
+| `text` | Human-readable fact |
+| `type` | `semantic` (stable truth) or `episodic` (event/context) |
+| `sourceAgent` | Which agent wrote it |
+| `conversationId` | Provenance |
+| `status` | `active`, `superseded`, or `disputed` |
+| `supersedes` | JSON array of prior claim IDs (audit) |
+
+## Entity keys
+
+Entities group facts for conflict detection. Agents must agree on the **same entity string** for cross-agent resolution to trigger.
+
+```text
+user.diet          → diet preferences
+user.timezone      → IANA / regional timezone
+user.schedule.*    → wildcard patterns in authority config
+```
+
+Optional **entity registry** constrains extraction to known keys and auto-registers new ones.
+
+## Claim status
+
+| Status | Searchable | Meaning |
+| --- | --- | --- |
+| `active` | Yes | Current canonical memory |
+| `superseded` | No | Replaced; kept for audit |
+| `disputed` | No | Challenger parked when authority ties |
+
+<Warning>
+  If two agents extract different entities for the same fact (`user.timezone` vs `user.location`), no cross-agent conflict runs. Tune extraction and entity resolution to keep keys aligned.
+</Warning>

@@ -1,0 +1,65 @@
+---
+title: Disputes API
+description: listOpenDisputes and resolveDispute for app-layer conflict resolution.
+---
+
+## Types
+
+```typescript
+type Dispute = {
+  id: string;
+  claimAId: string;       // incoming (usually disputed)
+  claimBId: string;       // incumbent (usually active)
+  entity: string;
+  resolutionStrategy: string | null;
+  resolvedOp: string | null;
+  resolvedAt: Date | null;
+  createdAt: Date;
+};
+
+type OpenDispute = Dispute & {
+  claimA: Claim;
+  claimB: Claim;
+};
+```
+
+## `listOpenDisputes(db, opts?)`
+
+Returns unresolved disputes (`resolved_at IS NULL`) with both claims hydrated.
+
+```javascript
+import { listOpenDisputes } from "vault-memory";
+
+const open = await listOpenDisputes(db);
+const filtered = await listOpenDisputes(db, { entity: "user.timezone" });
+```
+
+## `resolveDispute(db, vectorStore, disputeId, winningClaimId)`
+
+Promotes the chosen claim and closes the dispute.
+
+```javascript
+import { resolveDispute } from "vault-memory";
+
+const result = await resolveDispute(db, vectorStore, disputeId, winningClaimId);
+// result.winner, result.loser, result.dispute
+```
+
+### Errors
+
+| Condition | Error |
+| --- | --- |
+| Unknown dispute id | `Dispute not found` |
+| Already resolved | `Dispute already resolved` |
+| Invalid winner id | `winningClaimId must be claim_a or claim_b` |
+
+## Schema: `disputes` table
+
+| Column | Purpose |
+| --- | --- |
+| `claim_a_id` | Incoming (disputed) claim |
+| `claim_b_id` | Incumbent (active) claim |
+| `entity` | Subject of conflict |
+| `resolution_strategy` | Strategy that produced the dispute |
+| `resolved_op` | Winning claim id after resolution |
+| `resolved_at` | Timestamp when resolved |

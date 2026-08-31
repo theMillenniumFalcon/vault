@@ -1,0 +1,67 @@
+---
+title: Multi-agent conflict
+description: Recency and authority strategies, disputes, and consumer-side resolution.
+---
+
+When multiple agents share one database, pass 2 resolves conflicts on the same `entity`.
+
+## Strategies
+
+Configure per entity with `entityStrategies`. Unconfigured entities default to **recency**.
+
+### Recency (default)
+
+Newest claim wins. All conflicting active claims are superseded; incoming becomes active. No `disputes` row.
+
+**Trade-off:** a newer casual-chat message can overwrite an older authoritative fact.
+
+### Authority
+
+Compare `agent_authority` weights for the writing agent vs each conflicting claim's `sourceAgent` on that entity.
+
+- Incoming weight **strictly greater** than every conflict → `REPLACE`
+- Otherwise → `DISPUTE`
+
+Authority must be **seeded manually** — default weight is `0`.
+
+```javascript
+import { seedAuthority, EXAMPLE_AUTHORITY_SEED } from "vault-memory";
+
+await seedAuthority(db, EXAMPLE_AUTHORITY_SEED);
+// or custom:
+await seedAuthority(db, [
+  { entity: "user.timezone", agentId: "agent-a", weight: 0.9 },
+  { entity: "user.timezone", agentId: "agent-b", weight: 0.2 },
+]);
+```
+
+```javascript
+const memory = new Memory("agent-a", {
+  db,
+  vectorStore,
+  apiKey: process.env.OPENAI_API_KEY,
+  entityStrategies: { "user.timezone": "authority" },
+});
+```
+
+## Classic demo
+
+| Step | Agent | Input | Result |
+| --- | --- | --- | --- |
+| 1 | agent-a (0.9) | "I'm in PST" | Active PST |
+| 2 | agent-b (0.2) | "I'm in EST" | Disputed EST |
+| 3 | Search | "what timezone?" | Returns agent-a PST |
+
+## Disputes
+
+When authority cannot pick a winner, Vault:
+
+1. Stores the incoming claim as `disputed` (not indexed)
+2. Leaves the incumbent `active` and searchable
+3. Inserts a `disputes` row with `resolved_at` null
+
+Resolve at the app layer — see [Dispute resolution](/docs/guides/dispute-resolution). Vault does **not** auto-judge with an LLM.
+
+## FAISS in multi-process setups
+
+Each process holds its own in-memory FAISS index. Call `vectorStore.rebuild(db)` before reads/writes when another process may have written claims.

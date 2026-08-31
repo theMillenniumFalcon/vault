@@ -1,0 +1,71 @@
+---
+title: Memory class
+description: Memory.add, Memory.search, Memory.update, and Memory.delete.
+---
+
+## Constructor
+
+```javascript
+const memory = new Memory(agentId: string, config: MemoryConfig);
+```
+
+`agentId` becomes `sourceAgent` on all claims written by this instance.
+
+## Methods
+
+### `add(messages, conversationId)`
+
+Extract → classify → store. Returns `{ added: Claim[] }` (empty if all facts were NOOP).
+
+```javascript
+const { added } = await memory.add(
+  [{ role: "user", content: "I'm in PST" }],
+  "conv-1",
+);
+```
+
+### `search(query, opts?)`
+
+Semantic search scoped to this agent's `sourceAgent`.
+
+```typescript
+interface SearchOpts {
+  limit?: number;
+  entity?: string;
+  conversationId?: string;
+  status?: "active" | "superseded" | "disputed";
+}
+```
+
+### `update(claimId, text)`
+
+Re-extract embedding and update claim text for an owned claim.
+
+### `delete(claimId)`
+
+Remove claim row and vector index entry.
+
+## Cross-agent search
+
+`memory.search()` filters by agent. For all agents:
+
+```javascript
+import { search, resolveEmbed, resolveVectorStore } from "vault-memory";
+
+const vectorStore = resolveVectorStore({ db });
+const embed = resolveEmbed({ apiKey: process.env.OPENAI_API_KEY });
+
+const results = await search(db, vectorStore, embed, "timezone", {
+  status: "active",
+  limit: 10,
+});
+```
+
+## Lower-level exports
+
+| Export | Use |
+| --- | --- |
+| `extractFacts` | Custom pipelines without full `add` |
+| `classifyAgainstOwnHistory` | Custom classify flow |
+| `classifyAgainstOtherAgents` | Custom cross-agent flow |
+| `applyOp` / `applyCrossAgentResolution` | Direct op application |

@@ -1,0 +1,81 @@
+---
+title: Installation
+description: Install vault-memory with SQLite or Postgres, migrations, and vector backends.
+---
+
+## Requirements
+
+- Node.js 18+ or Bun 1.2+
+- OpenAI API key (or custom `embed` / `llm` functions)
+- Drizzle-compatible database driver
+
+## npm
+
+```bash
+npm install vault-memory drizzle-orm better-sqlite3
+```
+
+## Bun
+
+If Bun blocks the `faiss-node` native postinstall:
+
+```bash
+bun pm trust faiss-node
+bun install
+```
+
+## Schema and migrations
+
+Import tables from the package schema:
+
+```javascript
+import { claims, agentAuthority, disputes } from "vault-memory/schema";
+```
+
+Generate migrations with Drizzle Kit:
+
+```bash
+npx drizzle-kit generate
+npx drizzle-kit push
+```
+
+| Table | Purpose |
+| --- | --- |
+| `claims` | Facts with status, embeddings, attribution |
+| `agent_authority` | Per-entity trust weights for multi-agent resolution |
+| `disputes` | Audit trail when authority cannot pick a winner |
+
+## Vector store
+
+**Default:** `FaissVectorStore` via `faiss-node` — local index, SQL rows as source of truth.
+
+**Opt out** (e.g. CI without native bindings):
+
+```javascript
+import { Memory, MemoryVectorStore } from "vault-memory";
+
+const memory = new Memory("agent-a", {
+  db,
+  vectorStore: new MemoryVectorStore(),
+  apiKey: process.env.OPENAI_API_KEY,
+});
+```
+
+**Postgres:** use `PgVectorStore` from `vault-memory/pg` when you want the index in the database.
+
+## Environment variables
+
+```bash
+OPENAI_API_KEY=sk-...
+```
+
+Override models via `MemoryConfig`:
+
+```javascript
+const memory = new Memory("agent-a", {
+  db,
+  apiKey: process.env.OPENAI_API_KEY,
+  model: "gpt-4o-mini",
+  embeddingModel: "text-embedding-3-small",
+});
+```

@@ -1,0 +1,67 @@
+---
+title: Single-agent setup
+description: Configure Memory for one agent with extraction, classification, and search.
+---
+
+## Minimal config
+
+```javascript
+import { Memory } from "vault-memory";
+
+const memory = new Memory("my-agent", {
+  db,
+  apiKey: process.env.OPENAI_API_KEY,
+});
+```
+
+## Add facts
+
+```javascript
+const { added } = await memory.add(
+  [
+    { role: "user", content: "I'm vegetarian and allergic to peanuts" },
+    { role: "assistant", content: "Got it, I'll remember that." },
+  ],
+  "conversation-42",
+);
+```
+
+Only the **latest turn** (last user message and following assistant reply) is sent to extraction.
+
+## Search
+
+```javascript
+const results = await memory.search("dietary restrictions", {
+  limit: 5,
+  entity: "user.diet",       // optional filter
+  status: "active",          // default
+});
+```
+
+Search is scoped to `my-agent`'s `sourceAgent`.
+
+## Update and delete
+
+```javascript
+await memory.update(claimId, "The user is pescatarian");
+await memory.delete(claimId);
+```
+
+Both re-embed and sync the vector index for that claim.
+
+## Entity registry (optional)
+
+```javascript
+import { seedEntities } from "vault-memory";
+
+await seedEntities(db, [
+  { key: "user.diet", description: "Dietary preferences and restrictions" },
+  { key: "user.timezone", description: "User timezone" },
+]);
+
+const memory = new Memory("my-agent", {
+  db,
+  apiKey: process.env.OPENAI_API_KEY,
+  useEntityRegistry: true,
+});
+```

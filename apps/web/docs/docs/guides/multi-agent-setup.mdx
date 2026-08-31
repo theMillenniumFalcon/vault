@@ -1,0 +1,87 @@
+---
+title: Multi-agent setup
+description: Share one database across agents with authority weights and cross-agent search.
+---
+
+## Overview
+
+1. Create all tables (`claims`, `agent_authority`, `disputes`)
+2. Seed authority for entities that need domain trust
+3. Set `entityStrategies` per entity
+4. Share one `vectorStore` per process; rebuild when other processes write
+
+## Seed authority
+
+```javascript
+import {
+  Memory,
+  seedAuthority,
+  EXAMPLE_AUTHORITY_SEED,
+  resolveVectorStore,
+  search,
+  resolveEmbed,
+} from "vault-memory";
+
+await seedAuthority(db, EXAMPLE_AUTHORITY_SEED);
+```
+
+`EXAMPLE_AUTHORITY_SEED` encodes scheduling vs chat weights on `user.timezone` and `user.mood`.
+
+## Two agents, one database
+
+```javascript
+const vectorStore = resolveVectorStore({ db });
+const embed = resolveEmbed({ apiKey: process.env.OPENAI_API_KEY });
+
+const memoryA = new Memory("agent-a", {
+  db,
+  vectorStore,
+  apiKey: process.env.OPENAI_API_KEY,
+  entityStrategies: { "user.timezone": "authority" },
+});
+
+await memoryA.add([{ role: "user", content: "I'm in PST" }], "conv1");
+
+// Another process or script:
+await vectorStore.rebuild(db);
+
+const memoryB = new Memory("agent-b", {
+  db,
+  vectorStore,
+  apiKey: process.env.OPENAI_API_KEY,
+  entityStrategies: { "user.timezone": "authority" },
+});
+
+const { added } = await memoryB.add(
+  [{ role: "user", content: "I'm in EST" }],
+  "conv1",
+);
+console.log(added[0]?.status); // "disputed" when agent-b has lower authority
+```
+
+## Cross-agent search
+
+```javascript
+await vectorStore.rebuild(db);
+
+const results = await search(
+  db,
+  vectorStore,
+  embed,
+  "what timezone is the user in?",
+  { status: "active", limit: 5 },
+);
+console.log(results[0]?.sourceAgent);
+```
+
+## CLI demo
+
+The monorepo includes a two-terminal demo in `apps/cli-agent`:
+
+```bash
+cd apps/cli-agent
+bun run start:agent-a   # terminal 1
+bun run start:agent-b   # terminal 2
+```
+
+Try `/search what timezone is the user in?` after each agent stores a conflicting timezone.

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Vault",
+  "description": "Agent-attributed memory for AI agents — extract facts, resolve conflicts, search semantically.",
+  "theme": "mint",
+  "colors": {
+    "primary": "#d4d4d4",
+    "light": "#ededed",
+    "dark": "#737373"
+  },
+  "background": {
+    "color": {
+      "dark": "#0a0a0a"
+    }
+  },
+  "appearance": {
+    "default": "dark",
+    "strict": true
+  },
+  "styling": {
+    "codeblocks": "system"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/theMillenniumFalcon/vault"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "npm install",
+      "href": "https://www.npmjs.com/package/vault-memory"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/theMillenniumFalcon/vault"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "docs/index",
+              "docs/quickstart",
+              "docs/installation"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "docs/concepts/how-it-works",
+              "docs/concepts/claims-and-entities",
+              "docs/concepts/classification",
+              "docs/concepts/multi-agent"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "docs/guides/single-agent",
+              "docs/guides/multi-agent-setup",
+              "docs/guides/dispute-resolution"
+            ]
+          },
+          {
+            "group": "API reference",
+            "pages": [
+              "docs/api/memory",
+              "docs/api/configuration",
+              "docs/api/disputes"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

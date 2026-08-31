@@ -1,0 +1,85 @@
+---
+title: Quickstart
+description: Install vault-memory and store your first fact in under five minutes.
+---
+
+Get a single-agent Vault instance running with SQLite and OpenAI embeddings.
+
+## Install
+
+```bash
+npm install vault-memory drizzle-orm better-sqlite3
+```
+
+`faiss-node` installs automatically for vector search. `drizzle-orm` is a peer dependency — bring your own driver.
+
+## Create tables
+
+For a quick test, create the `claims` table directly:
+
+```javascript
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { Memory } from "vault-memory";
+
+const sqlite = new Database(":memory:");
+sqlite.exec(`
+  CREATE TABLE claims (
+    id TEXT PRIMARY KEY,
+    entity TEXT NOT NULL,
+    text TEXT NOT NULL,
+    type TEXT NOT NULL,
+    source_agent TEXT NOT NULL,
+    conversation_id TEXT NOT NULL,
+    confidence REAL NOT NULL DEFAULT 1.0,
+    status TEXT NOT NULL DEFAULT 'active',
+    supersedes TEXT,
+    embedding TEXT,
+    created_at INTEGER NOT NULL,
+    last_accessed_at INTEGER
+  )
+`);
+
+const db = drizzle(sqlite);
+```
+
+For production, use Drizzle migrations from `vault-memory/schema` (`claims`, `agent_authority`, `disputes`).
+
+## Store and search
+
+```javascript
+const memory = new Memory("agent-a", {
+  db,
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const { added } = await memory.add(
+  [{ role: "user", content: "I'm vegetarian" }],
+  "conversation-1",
+);
+console.log(added);
+
+const results = await memory.search("what does the user eat?");
+console.log(results[0]?.text);
+```
+
+## What happens under the hood
+
+1. **Extract** — LLM pulls structured facts from the latest conversation turn.
+2. **Classify** — Compare against similar claims from the same agent; write ADD, UPDATE, REPLACE, or skip (NOOP).
+3. **Index** — Embed the fact and upsert into the FAISS vector store.
+
+<Tip>
+  `memory.search()` is scoped to the constructing agent's `sourceAgent`. For cross-agent search, use the exported `search()` function — see [Multi-agent setup](/docs/guides/multi-agent-setup).
+</Tip>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/docs/installation">
+    Bun, Postgres, migrations, and vector store options.
+  </Card>
+  <Card title="How it works" icon="book" href="/docs/concepts/how-it-works">
+    Extract → classify → store pipeline in detail.
+  </Card>
+</CardGroup>

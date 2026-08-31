@@ -1,0 +1,67 @@
+---
+title: Configuration
+description: MemoryConfig, resolution strategies, entity registry, and vector store options.
+---
+
+## MemoryConfig
+
+```typescript
+interface MemoryConfig {
+  db: VaultDb;                    // Required
+  apiKey?: string;                // Default OpenAI embed + LLM
+  embed?: EmbedFn;
+  llm?: LLMFn;
+  model?: string;
+  embeddingModel?: string;
+  vectorStore?: VectorStore;      // Default: FaissVectorStore
+  vectorDimensions?: number;      // Default: 1536
+  entityStrategies?: Partial<Record<string, ResolutionStrategy>>;
+  useEntityRegistry?: boolean;
+  entityRegistryAutoRegister?: boolean;
+  entityKeyPattern?: RegExp | string;
+  resolveEntity?: EntityResolverFn;
+  entityResolutionThreshold?: number;
+  entityResolutionUseLlm?: boolean;
+}
+```
+
+Resolve helpers: `resolveMemoryConfig`, `resolveEmbed`, `resolveLLM`, `resolveVectorStore`.
+
+## Resolution strategies
+
+```typescript
+type ResolutionStrategy = "recency" | "authority";
+```
+
+| Strategy | Behavior |
+| --- | --- |
+| `recency` | Newest claim supersedes conflicts (default) |
+| `authority` | Higher `agent_authority` weight wins; else DISPUTE |
+
+Wildcard patterns in `entityStrategies`:
+
+```javascript
+entityStrategies: {
+  "user.timezone": "authority",
+  "user.schedule.*": "authority",
+}
+```
+
+## Authority helpers
+
+```javascript
+import {
+  seedAuthority,
+  getAuthority,
+  strategyForEntity,
+  entityMatchesPattern,
+} from "vault-memory";
+```
+
+## Schema import
+
+```javascript
+import { claims, agentAuthority, disputes, entities } from "vault-memory/schema";
+```
+
+Subpath exports: `vault-memory/pg`, `vault-memory/faiss`, `vault-memory/schema`.

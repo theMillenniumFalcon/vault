@@ -1,0 +1,60 @@
+---
+title: Dispute resolution
+description: Poll open disputes and resolve them from your app — human, policy, or your own LLM.
+---
+
+When authority cannot pick a winner, Vault parks the challenger as `disputed` and records an open row in `disputes`. **Vault does not auto-resolve with an LLM** — your application chooses the winner.
+
+## When a dispute is created
+
+All of the following must be true:
+
+1. Pass 1 returns `ADD`
+2. Pass 2 finds active claims from **another agent** on the **same entity**
+3. Entity strategy is `authority` (not `recency`)
+4. Incoming agent's weight is **not strictly higher** than every conflicting agent
+
+## Poll open disputes
+
+```javascript
+import { listOpenDisputes } from "vault-memory";
+
+const open = await listOpenDisputes(db, { entity: "user.timezone" });
+
+for (const dispute of open) {
+  console.log(dispute.claimA.text); // challenger (usually disputed)
+  console.log(dispute.claimB.text); // incumbent (usually active)
+}
+```
+
+## Resolve a dispute
+
+```javascript
+import { resolveDispute } from "vault-memory";
+
+const { winner, loser, dispute } = await resolveDispute(
+  db,
+  vectorStore,
+  disputeId,
+  winningClaimId,
+);
+```
+
+| Effect | Detail |
+| --- | --- |
+| Winner | Promoted to `active`, re-indexed in vector store |
+| Loser | Marked `superseded`, removed from index |
+| Dispute row | `resolved_op` set to winning claim id, `resolved_at` stamped |
+
+`winningClaimId` must be either `claim_a_id` or `claim_b_id` on the dispute.
+
+## Recommended app flow
+
+1. Poll `listOpenDisputes()` on a schedule or after writes
+2. Surface both claims in your UI ("Calendar says PST, chat says EST — which is right?")
+3. Call `resolveDispute()` with the user's choice or your policy outcome
+4. Optionally call `vectorStore.rebuild(db)` in other processes
+
+<Tip>
+  If authority would not overwrite a trusted claim, another model guess has the same trust problem. Prefer human confirmation for user-facing facts.
+</Tip>

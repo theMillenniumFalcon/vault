@@ -13,6 +13,7 @@ const GITHUB_URL = "https://github.com/theMillenniumFalcon/vault";
 
 const navLinks = [
   { href: "/", label: "Home" },
+  { href: "/docs", label: "Docs" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#features", label: "Features" },
   { href: "/#faq", label: "FAQ" },

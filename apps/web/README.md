@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vault web
 
-## Getting Started
+Marketing site and documentation for [Vault](https://github.com/theMillenniumFalcon/vault).
 
-First, run the development server:
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Site:** [http://localhost:3000](http://localhost:3000)
+- **Docs:** [http://localhost:3000/docs](http://localhost:3000/docs)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Docs are served by Next.js from `docs/docs/*.mdx` (dark mode only). No separate docs server required.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentation source
 
-## Learn More
+| Path | Purpose |
+|------|---------|
+| `docs/docs.json` | Mintlify config (navigation, branding) — used by Next.js sidebar and [Mintlify cloud](https://mintlify.com) |
+| `docs/docs/**/*.mdx` | Documentation content (shared by both) |
 
-To learn more about Next.js, take a look at the following resources:
+### Mintlify cloud (optional)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To deploy docs on Mintlify's platform:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Connect the repo with monorepo path `apps/web/docs`
+2. Enable **Host at** `/docs` in custom domain settings
+3. Set `MINTLIFY_DOCS_URL` if proxying through another host
 
-## Deploy on Vercel
+For local development, use `bun run dev` — the Next.js app renders the same MDX files.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Mintlify CLI (optional)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+bun run docs:mintlify
+```
+
+Requires Node.js 20–22 (the CLI currently fails on Node 24). Use Next.js `/docs` for local preview instead.
+
+## Stack
+
+- Next.js 16 (App Router)
+- Tailwind CSS 4
+- MDX via `next-mdx-remote`
+- Mintlify-compatible content in `docs/`

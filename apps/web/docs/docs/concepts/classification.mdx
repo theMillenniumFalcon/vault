@@ -1,0 +1,38 @@
+---
+title: Classification
+description: ADD, UPDATE, REPLACE, and NOOP — how Vault decides what to write.
+---
+
+Classification prevents duplicate and contradictory memory **within** an agent before cross-agent policy runs.
+
+## Same-agent ops
+
+Pass 1 compares the incoming fact against the top similar **active** claims from the same `sourceAgent`.
+
+### ADD
+
+No close match — store a new active claim.
+
+### UPDATE
+
+Refines an existing claim without contradiction. Updates text, embedding, and `lastAccessedAt` on the target row. Entity is preserved on the incumbent row to avoid label drift.
+
+### REPLACE
+
+Contradicts a prior claim. The old claim becomes `superseded` (removed from vector index); a new active claim is inserted with `supersedes` pointing at the old ID.
+
+### NOOP
+
+Restates something already known. Processing stops — no DB write.
+
+## Cross-agent result
+
+Pass 2 only runs when pass 1 returns `ADD`. Outcomes:
+
+| Result | Behavior |
+| --- | --- |
+| `ADD` | No conflicts on entity — store active |
+| `REPLACE` | Supersede conflicting active claims, store incoming as active |
+| `DISPUTE` | Store incoming as `disputed`, incumbent stays active, `disputes` row |
+
+See [Multi-agent conflict](/docs/concepts/multi-agent) for strategy details.

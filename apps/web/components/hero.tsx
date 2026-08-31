@@ -38,7 +38,7 @@ export const Hero = () => (
             </Link>
           </Button>
           <Button asChild variant="inverted" className="px-8">
-            <Link href="#how-it-works">How it works</Link>
+            <Link href="/docs">Read the docs</Link>
           </Button>
         </div>
     </div>
