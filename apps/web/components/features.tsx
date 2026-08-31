@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CodeSnippet } from "@/components/ui/code-snippet";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Heading } from "@/components/ui/heading";
 import { IconBox } from "@/components/ui/icon-box";
@@ -109,7 +108,6 @@ const structuredFeature = {
   title: "Facts, not chunks.",
   description:
     "Extraction returns entity + type (semantic or episodic). Optional registry seeds canonical keys — user.timezone, not a new label every turn.",
-  snippet: 'seedEntities(db, [{ key: "user.timezone", ... }])',
 };
 
 const classifyFeature = {
@@ -118,7 +116,6 @@ const classifyFeature = {
   title: "Align keys, then write.",
   description:
     "Entity resolution matches similar keys (vector + optional LLM) before classify runs ADD, UPDATE, REPLACE, or NOOP. Cross-agent conflicts use recency or authority per entity.",
-  snippet: 'entityStrategies: { "user.*": "authority" }',
 };
 
 const retrievalFeature = {
@@ -127,7 +124,6 @@ const retrievalFeature = {
   title: "Search by meaning.",
   description:
     "Queries are embedded and matched with cosine similarity. Ask about food preferences and get the diet claim — even when the query never mentions vegetarian.",
-  snippet: 'memory.search("what does the user eat?")',
 };
 
 const attributionFeature = {
@@ -137,6 +133,90 @@ const attributionFeature = {
   description:
     "Claims carry sourceAgent, conversationId, and status (active, superseded, or disputed). Superseded facts stay for audit; search returns active memory for your agent.",
 };
+
+type AgentClaimBoxProps = {
+  agent: string;
+  entity: string;
+  claim: string;
+  status: "active" | "superseded" | "disputed";
+  meta: string;
+  context: string;
+  detail: string;
+};
+
+function AgentClaimBox({
+  agent,
+  entity,
+  claim,
+  status,
+  meta,
+  context,
+  detail,
+}: AgentClaimBoxProps) {
+  const statusClass =
+    status === "active"
+      ? "text-neutral-100"
+      : status === "disputed"
+        ? "text-amber-500/90"
+        : "text-neutral-600 line-through";
+
+  return (
+    <div className="flex h-full flex-col border border-dashed border-neutral-800 p-4">
+      <p className="mb-3 font-mono text-[10px] tracking-widest text-neutral-500 uppercase">
+        {agent}
+      </p>
+      <p className="mb-3 text-xs leading-relaxed text-neutral-500">{context}</p>
+      <p className="font-mono text-xs text-neutral-300">
+        {entity} → &quot;{claim}&quot;
+      </p>
+      <p className="mt-3 font-mono text-[11px] text-neutral-500">
+        type: semantic · conv: {detail}
+      </p>
+      <p className={`mt-1 font-mono text-[11px] ${statusClass}`}>
+        status: {status} · {meta}
+      </p>
+    </div>
+  );
+}
+
+const multiAgentClaims: AgentClaimBoxProps[] = [
+  {
+    agent: "agent-a (scheduling)",
+    entity: "user.timezone",
+    claim: "The user is in PST",
+    status: "active",
+    meta: "authority 0.9",
+    context: "Heard during calendar onboarding — wins on timezone entity.",
+    detail: "onboarding-call",
+  },
+  {
+    agent: "agent-b (chat)",
+    entity: "user.timezone",
+    claim: "The user is in EST",
+    status: "disputed",
+    meta: "authority 0.2",
+    context: "Casual mention in chat — parked until a human picks PST vs EST.",
+    detail: "daily-checkin",
+  },
+  {
+    agent: "agent-b (chat)",
+    entity: "user.mood",
+    claim: "The user seems happy today",
+    status: "active",
+    meta: "authority 0.8",
+    context: "No conflict on mood — chat agent owns this domain.",
+    detail: "daily-checkin",
+  },
+  {
+    agent: "agent-c (tools)",
+    entity: "user.project",
+    claim: "User is building Vault",
+    status: "active",
+    meta: "recency",
+    context: "Tool run logged the latest repo context — newest write wins.",
+    detail: "repo-sync",
+  },
+];
 
 export const Features = () => (
   <div id="features" className="border-y border-dashed dark:border-neutral-700/50">
@@ -200,9 +280,6 @@ export const Features = () => (
               </Heading>
               <CardDescription>{feature.description}</CardDescription>
             </CardContent>
-            <CardFooter>
-              <CodeSnippet code={feature.snippet} />
-            </CardFooter>
           </Card>
         );
       })}
@@ -229,28 +306,9 @@ export const Features = () => (
           </CardDescription>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="border border-dashed border-neutral-800 p-4">
-              <p className="mb-3 font-mono text-[10px] tracking-widest text-neutral-500 uppercase">
-                agent-a (scheduling)
-              </p>
-              <p className="font-mono text-xs text-neutral-300">
-                user.timezone → &quot;The user is in PST&quot;
-              </p>
-              <p className="mt-2 font-mono text-[11px] text-neutral-500">
-                status: active · authority 0.9
-              </p>
-            </div>
-            <div className="border border-dashed border-neutral-800 p-4">
-              <p className="mb-3 font-mono text-[10px] tracking-widest text-neutral-500 uppercase">
-                agent-b (chat)
-              </p>
-              <p className="font-mono text-xs text-neutral-300">
-                user.timezone → &quot;The user is in EST&quot;
-              </p>
-              <p className="mt-2 font-mono text-[11px] text-amber-500/80">
-                status: disputed · authority 0.2
-              </p>
-            </div>
+            {multiAgentClaims.map((claim) => (
+              <AgentClaimBox key={`${claim.agent}-${claim.entity}`} {...claim} />
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -269,9 +327,6 @@ export const Features = () => (
           </Heading>
           <CardDescription>{retrievalFeature.description}</CardDescription>
         </CardContent>
-        <CardFooter>
-          <CodeSnippet code={retrievalFeature.snippet} />
-        </CardFooter>
       </Card>
 
       <Card className="gap-4">
