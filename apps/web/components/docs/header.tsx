@@ -9,10 +9,16 @@ export function DocsHeader() {
     <header className="sticky top-0 z-50 border-b border-dashed border-neutral-800 bg-[#0a0a0a]/90 backdrop-blur-lg">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
         <div className="flex items-center gap-6">
-          <Link href="/">
-            <Heading as="h1" size="h5" className="hover:opacity-80">
+          <Link
+            href="/"
+            className="flex items-center gap-2 hover:opacity-80"
+          >
+            <Heading as="h1" size="h5">
               Vault
             </Heading>
+            <span className="rounded-sm border border-dashed border-neutral-700/50 px-1.5 py-px font-mono text-[10px] tracking-widest text-neutral-400 uppercase">
+              beta
+            </span>
           </Link>
           <span className="hidden text-sm text-neutral-600 md:inline">/</span>
           <Link

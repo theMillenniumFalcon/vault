@@ -27,14 +27,16 @@ export const Header = () => {
     <header className="sticky top-0 z-50 border-b border-dashed bg-white/80 backdrop-blur-sm dark:border-neutral-700/50 dark:bg-black/80 dark:backdrop-blur-lg">
       <div className="dark:border-x-dark mx-auto box-border w-[1200px] border-x border-dashed px-4 max-2xl:w-[1100px] max-xl:w-[900px] max-lg:w-[700px] max-md:w-[500px] max-sm:w-[400px] dark:border-neutral-700/50">
         <nav className="flex items-center justify-between py-4">
-          <Link href="/">
-            <Heading
-              as="h1"
-              size="h5"
-              className="transition-opacity duration-200 hover:opacity-80"
-            >
+          <Link
+            href="/"
+            className="flex items-center gap-2 transition-opacity duration-200 hover:opacity-80"
+          >
+            <Heading as="h1" size="h5">
               Vault
             </Heading>
+            <span className="rounded-sm border border-dashed border-neutral-300 px-1.5 py-px font-mono text-[10px] tracking-widest text-neutral-500 uppercase dark:border-neutral-700/50 dark:text-neutral-400">
+              beta
+            </span>
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">
