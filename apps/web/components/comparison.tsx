@@ -123,7 +123,7 @@ function CellIcon({ value }: { value: CellValue }) {
   }
 
   return (
-    <span className="block max-w-[9rem] text-xs leading-relaxed break-words text-neutral-400 sm:max-w-none">
+    <span className="block min-w-[5.5rem] text-xs leading-relaxed break-words text-neutral-400 sm:min-w-0">
       {value}
     </span>
   );
@@ -159,18 +159,18 @@ export const Comparison = () => (
     </div>
 
     <div className="w-full max-w-full overflow-x-auto overscroll-x-contain border-y border-dashed dark:border-neutral-700/50">
-      <div className="relative min-w-[32rem]">
+      <div className="relative min-w-[40rem]">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-[36%] z-0 w-[22%] bg-gradient-to-b from-[#7c3aed]/35 via-[#4c1d95]/45 to-[#1e1b4b]/55"
+          className="pointer-events-none absolute inset-y-0 left-[34%] z-0 w-[22%] bg-gradient-to-b from-[#7c3aed]/35 via-[#4c1d95]/45 to-[#1e1b4b]/55"
         />
 
         <table className="relative z-10 w-full table-fixed text-left">
           <colgroup>
-            <col className="w-[36%]" />
+            <col className="w-[34%]" />
             <col className="w-[22%]" />
             <col className="w-[22%]" />
-            <col className="w-[20%]" />
+            <col className="w-[22%]" />
           </colgroup>
           <thead>
             <tr className="border-b border-dashed dark:border-neutral-700/50">
@@ -181,7 +181,7 @@ export const Comparison = () => (
                 <th
                   key={col.key}
                   className={cn(
-                    "px-3 py-4 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase sm:px-4",
+                    "px-2 py-4 text-center font-mono text-[9px] leading-tight tracking-widest uppercase sm:px-4 sm:text-left sm:text-[10px] sm:whitespace-nowrap",
                     col.highlight
                       ? vaultHeaderClass
                       : "text-neutral-500",
@@ -205,7 +205,7 @@ export const Comparison = () => (
                   <td
                     key={col.key}
                     className={cn(
-                      "px-3 py-3.5 sm:px-4",
+                      "min-w-[5.5rem] px-2 py-3.5 text-center sm:min-w-0 sm:px-4 sm:text-left",
                       col.highlight && vaultCellClass,
                     )}
                   >
