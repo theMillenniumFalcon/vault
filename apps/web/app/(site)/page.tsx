@@ -27,7 +27,6 @@ export default function Home() {
       <FAQ />
       <Separator />
       <CTA />
-      <Separator />
     </>
   );
 }

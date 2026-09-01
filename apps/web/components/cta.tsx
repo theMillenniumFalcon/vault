@@ -6,24 +6,17 @@ import { Dithering } from "@paper-design/shaders-react";
 import { ArrowRight } from "lucide-react";
 
 import { ExpandingButton } from "@/components/ui/animated/expanding-button";
-import { Floating } from "@/components/ui/animated/floating";
 import { Heading } from "@/components/ui/heading";
 
 const GITHUB_URL = "https://github.com/theMillenniumFalcon/vault";
 
-// Simple V notch: straight line from each top corner down to a center point.
-const V_CLIP_PATH = "polygon(0% 0%, 50% 100%, 100% 0%, 100% 100%, 0% 100%)";
-
 export const CTA = () => (
-  <div className="relative flex flex-col items-center justify-center overflow-hidden border-y border-dashed border-neutral-700/50 px-4 py-16 text-center">
-    <div
-      className="pointer-events-none absolute inset-0"
-      style={{ clipPath: V_CLIP_PATH }}
-    >
+  <div className="relative flex flex-col items-center justify-center overflow-hidden border-t border-dashed border-neutral-700/50 px-4 py-16 text-center">
+    <div className="pointer-events-none absolute inset-0">
       <Dithering
         style={{ height: "100%", width: "100%" }}
-        colorBack="rgba(0, 0, 0, 0)"
-        colorFront="hsl(0, 0%, 30%)"
+        colorBack="#050505"
+        colorFront="hsl(0, 0%, 20%)"
         shape="simplex"
         type="4x4"
         pxSize={3}
@@ -36,12 +29,6 @@ export const CTA = () => (
     </div>
 
     <div className="relative z-10 flex flex-col items-center">
-      <Floating className="mb-2">
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl border border-dashed border-neutral-700 bg-neutral-900 font-mono text-2xl font-bold text-white sm:h-32 sm:w-32">
-          V
-        </div>
-      </Floating>
-
       <Heading as="h2" size="h1" className="mb-4">
         Give your agents memory today.
       </Heading>
