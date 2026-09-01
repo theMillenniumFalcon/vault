@@ -135,6 +135,10 @@ const columns = [
   { key: "mem0" as const, label: "Mem0", highlight: false },
 ];
 
+const vaultCellClass = "relative z-10 bg-transparent";
+
+const vaultHeaderClass = cn(vaultCellClass, "text-violet-50");
+
 export const Comparison = () => (
   <div
     id="comparison"
@@ -155,8 +159,20 @@ export const Comparison = () => (
     </div>
 
     <div className="w-full max-w-full overflow-x-auto overscroll-x-contain border-y border-dashed dark:border-neutral-700/50">
-      <table className="w-full min-w-[32rem] text-left">
-        <thead>
+      <div className="relative min-w-[32rem]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-[36%] z-0 w-[22%] bg-gradient-to-b from-[#7c3aed]/35 via-[#4c1d95]/45 to-[#1e1b4b]/55"
+        />
+
+        <table className="relative z-10 w-full table-fixed text-left">
+          <colgroup>
+            <col className="w-[36%]" />
+            <col className="w-[22%]" />
+            <col className="w-[22%]" />
+            <col className="w-[20%]" />
+          </colgroup>
+          <thead>
             <tr className="border-b border-dashed dark:border-neutral-700/50">
               <th className="px-3 py-4 font-mono text-[10px] tracking-widest whitespace-nowrap text-neutral-500 uppercase sm:px-4">
                 Feature
@@ -167,7 +183,7 @@ export const Comparison = () => (
                   className={cn(
                     "px-3 py-4 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase sm:px-4",
                     col.highlight
-                      ? "text-neutral-100"
+                      ? vaultHeaderClass
                       : "text-neutral-500",
                   )}
                 >
@@ -190,7 +206,7 @@ export const Comparison = () => (
                     key={col.key}
                     className={cn(
                       "px-3 py-3.5 sm:px-4",
-                      col.highlight && "bg-neutral-900/40",
+                      col.highlight && vaultCellClass,
                     )}
                   >
                     <CellIcon value={row[col.key]} />
@@ -199,7 +215,8 @@ export const Comparison = () => (
               </tr>
             ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   </div>
 );
