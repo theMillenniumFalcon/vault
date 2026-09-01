@@ -30,16 +30,22 @@ const THUMBNAIL_SRC = "/pictures/thumbnail.jpg";
 export const DemoVideo = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const playVideo = () => {
+    void videoRef.current?.play();
+  };
+
   const handleOpenChange = (open: boolean) => {
     const video = videoRef.current;
-    if (!video) return;
 
     if (open) {
-      video.currentTime = 0;
-      void video.play();
+      if (video) {
+        video.currentTime = 0;
+        void video.play();
+      }
       return;
     }
 
+    if (!video) return;
     video.pause();
     video.currentTime = 0;
   };
@@ -108,6 +114,8 @@ export const DemoVideo = () => {
               className="aspect-video w-full bg-black"
               controls
               playsInline
+              autoPlay
+              onLoadedData={playVideo}
             >
               <source src={VIDEO_SRC} type="video/mp4" />
               Your browser does not support the video tag.
