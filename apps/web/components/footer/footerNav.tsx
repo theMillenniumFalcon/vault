@@ -29,8 +29,8 @@ const socialLinks = [
 ];
 
 export const FooterNav = () => (
-  <div className="grid grid-cols-1 gap-12 px-4 pt-16 pb-10 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.55fr))_auto] lg:gap-10">
-    <div className="flex max-w-md flex-col gap-4">
+  <div className="grid grid-cols-2 gap-x-8 gap-y-10 px-4 pt-16 pb-10 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.55fr))_auto] lg:gap-10">
+    <div className="col-span-2 flex max-w-md flex-col gap-4 lg:col-span-1">
       <p className="text-2xl leading-tight font-bold tracking-tight text-white md:text-3xl">
         Agent-attributed memory for AI agents.
       </p>
