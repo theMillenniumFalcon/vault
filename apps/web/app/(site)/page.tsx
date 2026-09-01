@@ -1,5 +1,6 @@
 import { Separator } from "@/components/ui/separator";
 
+import { Comparison } from "@/components/comparison";
 import { CTA } from "@/components/cta";
 import { FAQ } from "@/components/faq";
 import { Features } from "@/components/features";
@@ -17,6 +18,8 @@ export default function Home() {
       <Skills />
       <Separator />
       <Features />
+      <Separator />
+      <Comparison />
       <Separator />
       <FAQ />
       <Separator />
