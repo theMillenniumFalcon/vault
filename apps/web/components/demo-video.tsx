@@ -59,7 +59,7 @@ export const DemoVideo = () => {
         </p>
       </div>
 
-      <div className="relative overflow-hidden p-10 md:p-16">
+      <div className="relative overflow-hidden p-10 pb-0 md:p-16 md:pb-0">
         <div className="pointer-events-none absolute inset-0">
           <SimplexNoise
             style={{ height: "100%", width: "100%" }}
