@@ -1,4 +1,3 @@
-import { CodeSnippet } from "@/components/ui/code-snippet";
 import { Heading } from "@/components/ui/heading";
 
 const steps = [
@@ -7,21 +6,18 @@ const steps = [
     title: "Extract facts",
     description:
       "Pass conversation messages to Vault. An LLM pulls structured facts from the latest turn — diet preferences, timezone, project context — validated with Zod before anything is stored.",
-    snippet: 'await memory.add(messages, "conversation-1")',
   },
   {
     number: "02",
     title: "Resolve & classify",
     description:
       "Entity resolution aligns keys to existing claims (vector match, optional LLM). Then each fact is classified: ADD, UPDATE, REPLACE, or NOOP. Cross-agent conflicts use recency or authority per entity.",
-    snippet: 'entityStrategies: { "user.*": "authority" }',
   },
   {
     number: "03",
     title: "Search semantically",
     description:
       "Retrieve memories by meaning, not keywords. Embeddings power vector search scoped to your agent, with filters for entity, conversation, and status.",
-    snippet: 'await memory.search("what does the user eat?")',
   },
 ];
 
@@ -58,8 +54,6 @@ export const HowItWorks = () => (
               {step.description}
             </p>
           </div>
-
-          {step.snippet && <CodeSnippet code={step.snippet} />}
         </div>
       );
     })}

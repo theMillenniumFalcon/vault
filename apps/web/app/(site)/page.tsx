@@ -6,7 +6,7 @@ import { FAQ } from "@/components/faq";
 import { Features } from "@/components/features";
 import { Hero } from "@/components/hero";
 import { HowItWorks } from "@/components/how-it-works";
-import { Skills } from "@/components/skills";
+import { UseCases } from "@/components/use-cases";
 
 export default function Home() {
   return (
@@ -15,7 +15,7 @@ export default function Home() {
       <Separator />
       <HowItWorks />
       <Separator />
-      <Skills />
+      <UseCases />
       <Separator />
       <Features />
       <Separator />
