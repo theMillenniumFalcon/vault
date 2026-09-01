@@ -19,7 +19,7 @@ export default function Home() {
       <Separator />
       <Features />
       <Separator />
-      {/* <Comparison /> */}
+      <Comparison />
       <Separator />
       <FAQ />
       <Separator />

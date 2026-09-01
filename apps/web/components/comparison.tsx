@@ -122,7 +122,11 @@ function CellIcon({ value }: { value: CellValue }) {
     );
   }
 
-  return <span className="text-xs leading-relaxed text-neutral-400">{value}</span>;
+  return (
+    <span className="block max-w-[9rem] text-xs leading-relaxed break-words text-neutral-400 sm:max-w-none">
+      {value}
+    </span>
+  );
 }
 
 const columns = [
@@ -134,7 +138,7 @@ const columns = [
 export const Comparison = () => (
   <div
     id="comparison"
-    className="border-y border-dashed pt-16 dark:border-neutral-700/50"
+    className="min-w-0 max-w-full overflow-hidden border-y border-dashed pt-16 dark:border-neutral-700/50"
   >
     <div className="mb-10 px-4">
       <Eyebrow>Compare</Eyebrow>
@@ -150,18 +154,18 @@ export const Comparison = () => (
       </p>
     </div>
 
-    <div className="overflow-x-auto border-y border-dashed dark:border-neutral-700/50">
-        <table className="w-full min-w-[560px] text-left">
-          <thead>
+    <div className="w-full max-w-full overflow-x-auto overscroll-x-contain border-y border-dashed dark:border-neutral-700/50">
+      <table className="w-full min-w-[32rem] text-left">
+        <thead>
             <tr className="border-b border-dashed dark:border-neutral-700/50">
-              <th className="px-4 py-4 font-mono text-[10px] tracking-widest text-neutral-500 uppercase">
+              <th className="px-3 py-4 font-mono text-[10px] tracking-widest whitespace-nowrap text-neutral-500 uppercase sm:px-4">
                 Feature
               </th>
               {columns.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
-                    "px-4 py-4 font-mono text-[10px] tracking-widest uppercase",
+                    "px-3 py-4 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase sm:px-4",
                     col.highlight
                       ? "text-neutral-100"
                       : "text-neutral-500",
@@ -178,14 +182,14 @@ export const Comparison = () => (
                 key={row.feature}
                 className="border-b border-dashed last:border-b-0 dark:border-neutral-700/50"
               >
-                <td className="px-4 py-3.5 text-sm text-neutral-300">
+                <td className="px-3 py-3.5 text-sm text-neutral-300 sm:px-4">
                   {row.feature}
                 </td>
                 {columns.map((col) => (
                   <td
                     key={col.key}
                     className={cn(
-                      "px-4 py-3.5",
+                      "px-3 py-3.5 sm:px-4",
                       col.highlight && "bg-neutral-900/40",
                     )}
                   >
@@ -194,8 +198,8 @@ export const Comparison = () => (
                 ))}
               </tr>
             ))}
-          </tbody>
-        </table>
+        </tbody>
+      </table>
     </div>
   </div>
 );
