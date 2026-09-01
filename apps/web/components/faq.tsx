@@ -26,7 +26,7 @@ const faqs = [
     id: "databases",
     question: "Which databases are supported?",
     answer:
-      "Any database Drizzle supports. The CLI agent uses bun:sqlite out of the box. The library also includes optional Postgres and FAISS vector store backends for production deployments.",
+      "Any database Drizzle supports — SQLite, Postgres, bun:sqlite, and more. The library includes optional FAISS vector store backends for production deployments.",
   },
   {
     id: "llm-providers",
@@ -51,12 +51,6 @@ const faqs = [
     question: "How does entity resolution work?",
     answer:
       "Extractors can drift labels (user.xyz vs user.timezone). Before classify, Vault embeds the entity string and aligns it to similar existing keys above entityMatchThreshold. Borderline scores can use LLM disambiguation. Optionally enable useEntityRegistry to constrain extraction to canonical keys you seed in the database.",
-  },
-  {
-    id: "cli-agent",
-    question: "What is the CLI agent?",
-    answer:
-      "apps/cli-agent is an interactive demo. Run it with OPENAI_API_KEY set, chat naturally, and use /search and /claims to inspect memory. Set AGENT_ID and VAULT_DB_PATH to test multi-agent on a shared SQLite file.",
   },
   {
     id: "license",

@@ -15,7 +15,7 @@ const GITHUB_URL = "https://github.com/theMillenniumFalcon/vault";
 const V_CLIP_PATH = "polygon(0% 0%, 50% 100%, 100% 0%, 100% 100%, 0% 100%)";
 
 export const CTA = () => (
-  <div className="relative flex flex-col items-center justify-center overflow-hidden border-t border-dashed border-neutral-700/50 px-4 py-16 text-center">
+  <div className="relative flex flex-col items-center justify-center overflow-hidden border-y border-dashed border-neutral-700/50 px-4 py-16 text-center">
     <div
       className="pointer-events-none absolute inset-0"
       style={{ clipPath: V_CLIP_PATH }}

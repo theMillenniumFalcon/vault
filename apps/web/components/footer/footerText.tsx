@@ -52,7 +52,6 @@ export const FooterText = () => {
 
             vec3 blob(vec2 uv, vec2 center, float radius, vec3 color, float t, vec2 drift) {
                 vec2 pos = center + drift;
-                // Turbulent distortion using fbm
                 vec2 distort = vec2(
                     fbm(uv * 2.0 + t * 0.3),
                     fbm(uv * 2.0 + t * 0.25 + 5.2)
@@ -68,7 +67,6 @@ export const FooterText = () => {
 
                 float t = u_time * 0.6;
 
-                // Fast-moving, chaotic blob positions
                 vec2 d1 = vec2(
                     0.18 + 0.22 * sin(t * 1.1) + 0.08 * sin(t * 2.3),
                     0.50 + 0.25 * cos(t * 0.8) + 0.07 * cos(t * 3.1)
@@ -92,26 +90,18 @@ export const FooterText = () => {
 
                 vec3 col = vec3(0.0);
 
-                // Deep red blob
                 col += blob(uv, vec2(0.0), 0.24, vec3(0.55, 0.04, 0.04), t, d1);
-                // Rich violet/blue blob
                 col += blob(uv, vec2(0.0), 0.30, vec3(0.12, 0.04, 0.62), t, d2);
-                // Magenta/purple accent
                 col += blob(uv, vec2(0.0), 0.20, vec3(0.38, 0.02, 0.45), t, d3);
-                // Dark teal hint
                 col += blob(uv, vec2(0.0), 0.18, vec3(0.02, 0.18, 0.42), t, d4);
-                // Bright electric blue flash
                 col += blob(uv, vec2(0.0), 0.14, vec3(0.05, 0.10, 0.75), t, d5);
 
-                // Pulse the overall brightness with time
                 float pulse = 0.85 + 0.15 * sin(t * 1.8);
                 col *= pulse;
 
-                // Keep it dark and moody
                 col = clamp(col, 0.0, 0.72);
-                col = pow(col, vec3(1.3)); // slight contrast boost
+                col = pow(col, vec3(1.3));
 
-                // Vignette
                 float vignette = 1.0 - smoothstep(0.25, 0.95, length(uv - vec2(0.5)) * 1.6);
                 col *= vignette;
 
@@ -172,37 +162,33 @@ export const FooterText = () => {
 
   return (
     <div
-      className="relative flex justify-center overflow-hidden"
+      className="relative min-h-[clamp(16rem,32vw,28rem)] overflow-hidden"
       style={{
-        minHeight: "clamp(6rem, 11vw, 11rem)",
         color: "var(--color-neutral-500, #737373)",
       }}
     >
-      {/* WebGL shader background */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full"
         style={{ display: "block" }}
       />
 
-      {/* Big background text */}
       <span
-        className="absolute font-black text-white select-none"
+        className="pointer-events-none absolute bottom-0 left-1/2 w-full -translate-x-1/2 text-center font-black text-white select-none"
         style={{
-          fontSize: "clamp(3.5rem, 11vw, 11rem)",
-          bottom: "calc(-1 * clamp(3.5rem, 11vw, 11rem) / 2)",
-          letterSpacing: 0,
+          fontSize: "clamp(5rem, 18vw, 16rem)",
+          lineHeight: 0.85,
+          letterSpacing: "-0.04em",
           fontFamily: "var(--font-syne, ui-sans-serif, sans-serif)",
-          fontWeight: 800, // ← explicit weight
+          fontWeight: 800,
           textRendering: "geometricPrecision",
           opacity: 0.18,
           zIndex: 2,
         }}
       >
-        Vault
+        Vault.
       </span>
 
-      {/* Dot grid overlay */}
       <div
         className="absolute inset-0"
         style={{
@@ -217,7 +203,6 @@ export const FooterText = () => {
         }}
       />
 
-      {/* Gradient overlay */}
       <div
         className="absolute inset-0"
         style={{
