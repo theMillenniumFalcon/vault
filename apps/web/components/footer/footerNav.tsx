@@ -52,6 +52,9 @@ export const FooterNav = () => (
         <NavLink href="/#features" className={linkClass}>
           Features
         </NavLink>
+        <NavLink href="/#conflict" className={linkClass}>
+          Conflict
+        </NavLink>
         <NavLink href="/#comparison" className={linkClass}>
           Compare
         </NavLink>
