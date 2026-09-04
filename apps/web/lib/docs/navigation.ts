@@ -19,11 +19,14 @@ const PAGE_TITLES: Record<string, string> = {
   "docs/concepts/claims-and-entities": "Claims and entities",
   "docs/concepts/classification": "Classification",
   "docs/concepts/multi-agent": "Multi-agent conflict",
+  "docs/concepts/vector-store": "Vector store",
   "docs/guides/single-agent": "Single-agent setup",
   "docs/guides/multi-agent-setup": "Multi-agent setup",
+  "docs/guides/cli-demo": "CLI demo",
   "docs/guides/dispute-resolution": "Dispute resolution",
   "docs/api/memory": "Memory class",
   "docs/api/configuration": "Configuration",
+  "docs/api/schema": "Schema",
   "docs/api/disputes": "Disputes API",
 };
 

@@ -44,6 +44,9 @@ npx drizzle-kit push
 | `claims` | Facts with status, embeddings, attribution |
 | `agent_authority` | Per-entity trust weights for multi-agent resolution |
 | `disputes` | Audit trail when authority cannot pick a winner |
+| `entities` | Canonical entity taxonomy (optional, for `useEntityRegistry`) |
+
+Full column reference: [Schema](/docs/api/schema).
 
 ## Vector store
 
@@ -62,6 +65,8 @@ const memory = new Memory("agent-a", {
 ```
 
 **Postgres:** use `PgVectorStore` from `vault-memory/pg` when you want the index in the database.
+
+See [Vector store](/docs/concepts/vector-store) for backends, multi-process rebuild, and index lifecycle.
 
 ## Environment variables
 

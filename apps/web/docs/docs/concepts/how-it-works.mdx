@@ -7,15 +7,15 @@ Every `memory.add()` runs a pipeline before anything is written.
 
 ## Pipeline overview
 
-```mermaid
-flowchart LR
-  A[Messages] --> B[Extract facts]
-  B --> C[Resolve entity]
-  C --> D[Pass 1: own history]
-  D -->|NOOP| E[Stop]
-  D -->|UPDATE/REPLACE| F[Apply op]
-  D -->|ADD| G[Pass 2: other agents]
-  G --> H[Apply resolution]
+```
+messages
+  → extractFacts (LLM, latest turn)
+  → embed
+  → resolveEntity (align entity label — optional similarity + LLM)
+  → ensureEntityInRegistry (optional, useEntityRegistry)
+  → Pass 1: own history (ADD | UPDATE | REPLACE | NOOP)
+  → if ADD: Pass 2 — other agents (recency or authority)
+  → apply op (write claim row + sync vector index)
 ```
 
 ## 1. Extract
@@ -26,9 +26,19 @@ flowchart LR
 { "facts": [{ "entity": "user.diet", "text": "The user is vegetarian", "type": "semantic" }] }
 ```
 
+With `useEntityRegistry: true`, the prompt includes known keys from the `entities` table and the LLM must pick an existing key or use `new:user.<domain>`.
+
 ## 2. Resolve entity
 
-Optional entity resolution aligns extractor labels to existing keys (vector similarity ± LLM disambiguation). Prevents `user.timezone` vs `user.location` drift from fragmenting memory.
+`resolveEntity()` aligns the extracted label with existing active claims when fact text is semantically similar. Prevents `user.timezone` vs `user.location` drift from fragmenting memory.
+
+| Similarity | Behavior |
+| --- | --- |
+| ≥ 0.85 | Auto-align to incumbent entity |
+| 0.70 – 0.85 | Optional LLM disambiguation |
+| < 0.70 | Keep extracted entity |
+
+See [Claims and entities](/docs/concepts/claims-and-entities) for registry and config options.
 
 ## 3. Pass 1 — same agent
 
@@ -52,3 +62,5 @@ When pass 1 returns `ADD`, Vault searches for **active** claims on the same `ent
 `memory.search(query)` embeds the query, hits the vector store, hydrates rows from SQL, and applies **recency-weighted scoring** at query time. Stored `confidence` is not mutated.
 
 Cross-agent search uses the exported `search(db, vectorStore, embed, query, opts)` with no `sourceAgent` filter.
+
+Each agent process holds its own FAISS index. Call `vectorStore.rebuild(db)` before reads/writes when another process may have written claims — see [Vector store](/docs/concepts/vector-store).

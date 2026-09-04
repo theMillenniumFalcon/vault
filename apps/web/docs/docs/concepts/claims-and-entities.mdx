@@ -15,7 +15,7 @@ A **claim** is one structured fact Vault stores:
 | `sourceAgent` | Which agent wrote it |
 | `conversationId` | Provenance |
 | `status` | `active`, `superseded`, or `disputed` |
-| `supersedes` | JSON array of prior claim IDs (audit) |
+| `supersedes` | ID of prior claim this replaced (audit) |
 
 ## Entity keys
 
@@ -27,7 +27,46 @@ user.timezone      → IANA / regional timezone
 user.schedule.*    → wildcard patterns in authority config
 ```
 
-Optional **entity registry** constrains extraction to known keys and auto-registers new ones.
+Entities are **not a hardcoded enum**. The extraction LLM picks a dotted-path string guided by the prompt (`user.diet`, `user.timezone`, etc.). Any non-empty string is accepted.
+
+## Entity resolution
+
+After extraction and before classification, `resolveEntity()` aligns the extracted label with existing **active claims** when fact text is semantically similar. This fixes LLM drift (`user.abc` vs `user.timezone`) so cross-agent conflict can trigger.
+
+| Similarity score | Behavior |
+| --- | --- |
+| **≥ 0.85** (`entityMatchThreshold`) | Auto-align to incumbent claim's entity |
+| **0.70 – 0.85** | Optional LLM disambiguation (`entityResolutionUseLlm`) |
+| **< 0.70** (`entityDisambiguationThreshold`) | Keep extracted entity |
+
+Search is global across all active claims (no `sourceAgent` filter). Disable entirely with `entityMatchThreshold: 0` or a custom `resolveEntity` hook.
+
+On `UPDATE`, the stored entity is **preserved** from the target claim — extractor labels cannot rename via merge.
+
+## Entity registry (optional)
+
+For production apps that need a canonical taxonomy, enable the `entities` table with `useEntityRegistry: true`:
+
+```javascript
+import { Memory, seedEntities, EXAMPLE_ENTITY_SEED } from "vault-memory";
+
+await seedEntities(db, EXAMPLE_ENTITY_SEED);
+
+const memory = new Memory("my-agent", {
+  db,
+  apiKey: process.env.OPENAI_API_KEY,
+  useEntityRegistry: true,
+  entityRegistryAutoRegister: true, // default — register valid new: keys on first use
+});
+```
+
+When enabled:
+
+- The extraction prompt includes known keys from the registry
+- The LLM must pick an existing key or use `new:user.<domain>` for new subjects
+- `ensureEntityInRegistry()` validates keys against `entityKeyPattern` (default: `user.<dotted.path>`)
+
+See [Configuration](/docs/api/configuration) for all entity-related options.
 
 ## Claim status
 

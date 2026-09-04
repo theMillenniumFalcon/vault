@@ -1,0 +1,105 @@
+---
+title: Vector store
+description: FAISS, MemoryVectorStore, and PgVectorStore — how Vault indexes embeddings for semantic search.
+---
+
+SQL claim rows are **canonical**. The vector store is a search index. Embeddings live in `claims.embedding` (JSON) and are mirrored in the index for fast top-k retrieval.
+
+If the index drifts (multi-process writes, crash, manual DB edits), call `vectorStore.rebuild(db)`.
+
+## Backends
+
+| Backend | Import | When to use |
+| --- | --- | --- |
+| **`FaissVectorStore`** | `vault-memory` (default) | Local dev, single-machine multi-agent |
+| **`MemoryVectorStore`** | `vault-memory` | Tests, CI, no native deps |
+| **`PgVectorStore`** | `vault-memory/pg` | Postgres + `pgvector`, shared across processes |
+
+### FaissVectorStore (default)
+
+- Uses `faiss-node` native binding
+- `IndexFlatIP` — exact inner-product on L2-normalized vectors
+- **Per-process** — each agent holds its own in-memory index
+- Created automatically via `resolveVectorStore()` when `vectorStore` is omitted
+
+On Bun, if postinstall is blocked:
+
+```bash
+bun pm trust faiss-node
+bun install
+```
+
+### MemoryVectorStore (opt-out)
+
+Pure JS brute-force cosine similarity — no native dependencies. Good for unit tests and CI:
+
+```javascript
+import { Memory, MemoryVectorStore } from "vault-memory";
+
+const memory = new Memory("agent-a", {
+  db,
+  vectorStore: new MemoryVectorStore(),
+  apiKey: process.env.OPENAI_API_KEY,
+});
+```
+
+### PgVectorStore (Postgres)
+
+Embeddings in a `pgvector` column with filters pushed down to SQL. **Shared index** — no per-process rebuild needed. Preferred when multiple writers outgrow SQLite:
+
+```javascript
+import { PgVectorStore } from "vault-memory/pg";
+```
+
+## Index lifecycle
+
+Every claim write syncs the index in the same logical operation:
+
+| Op | Vector store action |
+| --- | --- |
+| ADD / UPDATE / REPLACE | `upsert` |
+| DELETE | `remove` |
+| REPLACE (superseded claim) | `remove` superseded ID |
+| DISPUTE (incoming) | **not indexed** — disputed claims excluded from active search |
+
+## Multi-process pattern
+
+Each agent process holds its own FAISS index. When sharing a SQLite file, rebuild before reads/writes so the index sees other agents' claims:
+
+```javascript
+await vectorStore.rebuild(db);
+const results = await memory.search("timezone");
+```
+
+```
+Process A                    Process B
+  │                            │
+  ├─ write claim to DB         │
+  │                            ├─ rebuild(db)  ← see other agent's rows
+  │                            ├─ write claim
+  ├─ rebuild(db)               │
+  ├─ read/search               │
+```
+
+**Without rebuild**, agent B's FAISS index won't see agent A's claims even though they're in SQLite.
+
+## Search pipeline
+
+1. Embed query text
+2. `vectorStore.search(embedding, { limit, filter })` → claim IDs + scores
+3. Hydrate rows from SQL
+4. Apply recency decay (`recencyWeightedScore`) — does not mutate stored confidence
+5. Bump `lastAccessedAt` on returned claims
+6. Re-sort by decayed score
+
+## Configuration
+
+```javascript
+const memory = new Memory("agent-a", {
+  db,
+  vectorStore: resolveVectorStore({ db, vectorDimensions: 1536 }),
+  apiKey: process.env.OPENAI_API_KEY,
+});
+```
+
+If using custom embed dimensions, set `vectorDimensions` to match your embedding model.

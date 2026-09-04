@@ -1,0 +1,123 @@
+---
+title: CLI demo
+description: Two-terminal multi-agent walkthrough with the vault-shared.db demo.
+---
+
+The monorepo includes a hands-on CLI demo in `apps/cli-agent`. Two independent agent processes share one SQLite file — each with its own FAISS index but the same claim rows.
+
+## Setup
+
+```bash
+git clone https://github.com/theMillenniumFalcon/vault.git
+cd vault/apps/cli-agent
+bun install
+cp .env.example .env
+# Set OPENAI_API_KEY in .env
+```
+
+For a clean run, delete any existing database:
+
+```bash
+rm vault-shared.db   # Windows: Remove-Item vault-shared.db
+```
+
+## Run
+
+**Terminal 1 — scheduling agent (agent-a):**
+
+```bash
+bun run start:agent-a
+```
+
+**Terminal 2 — chat agent (agent-b):**
+
+```bash
+bun run start:agent-b
+```
+
+Both default to `vault-shared.db`. Override with `VAULT_DB_PATH`.
+
+## Commands
+
+| Command | Action |
+| --- | --- |
+| `<message>` | Extract facts and store |
+| `/search <query>` | Cross-agent semantic search |
+| `/claims` | List all claim rows |
+| `/disputes` | List open disputes |
+| `/quit` | Exit |
+
+## Try the timezone conflict
+
+**Terminal 1:**
+
+```
+You: I'm in PST
+```
+
+**Terminal 2:**
+
+```
+You: I'm in EST
+```
+
+Expected in terminal 2: stored claim with status **`[disputed]`**.
+
+Both terminals:
+
+```
+You: /disputes
+```
+
+Expected: one open dispute on `user.timezone`, strategy `authority`.
+
+```
+You: /search what timezone is the user in?
+```
+
+Expected: top result from **agent-a**, text contains **PST**.
+
+## Why agent-a wins
+
+From `EXAMPLE_AUTHORITY_SEED`:
+
+| Entity | agent-a weight | agent-b weight |
+| --- | --- | --- |
+| `user.timezone` | 0.9 | 0.2 |
+| `user.mood` | 0.3 | 0.8 |
+
+agent-b cannot beat agent-a on timezone → **DISPUTE** instead of overwrite.
+
+## Recency fallback demo
+
+Entities without authority config (e.g. `user.diet`) use **recency** — newest claim wins, no dispute row.
+
+Terminal 1: `I love Italian food`
+
+Terminal 2: `I hate Italian food, I only eat Japanese`
+
+→ agent-b's claim is active, agent-a superseded, `/disputes` empty.
+
+## What the demo wires up
+
+| Piece | Role |
+| --- | --- |
+| `bootstrapSharedStore(db)` | Seeds `EXAMPLE_AUTHORITY_SEED` once |
+| `createAgentMemory(agentId, db)` | One `Memory` + FAISS per process |
+| `syncVectorIndex()` | Rebuilds FAISS from DB before each op |
+| `searchSharedStore()` | Cross-agent search (no `sourceAgent` filter) |
+
+Authority defaults:
+
+```javascript
+{
+  "user.timezone": "authority",
+  "user.mood": "authority",
+}
+```
+
+## Generic entry point
+
+```bash
+AGENT_ID=agent-b VAULT_DB_PATH=./vault-shared.db bun run start
+```

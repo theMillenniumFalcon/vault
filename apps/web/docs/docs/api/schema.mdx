@@ -1,0 +1,108 @@
+---
+title: Schema
+description: Database tables, Drizzle migrations, and upgrading from v0.1.x.
+---
+
+Vault does **not** ship a database — you bring Drizzle + SQLite or Postgres. Schema is exported from `vault-memory/schema`.
+
+## Tables
+
+### `claims`
+
+Core fact storage.
+
+| Column | Purpose |
+| --- | --- |
+| `id` | Claim UUID |
+| `entity` | Dotted path key, e.g. `user.timezone` |
+| `text` | Human-readable fact statement |
+| `type` | `semantic` or `episodic` |
+| `source_agent` | Which agent wrote this |
+| `conversation_id` | Source conversation |
+| `confidence` | Default 1.0 |
+| `status` | `active`, `superseded`, or `disputed` |
+| `supersedes` | ID of claim this replaced |
+| `embedding` | JSON array of floats |
+| `created_at` | When stored |
+| `last_accessed_at` | Updated on search return (decay) |
+
+### `agent_authority`
+
+Per-agent trust weights for conflict resolution.
+
+| Column | Purpose |
+| --- | --- |
+| `entity` | Exact entity or wildcard (`user.schedule.*`) |
+| `agent_id` | Agent identifier |
+| `weight` | 0–1 trust score |
+
+### `disputes`
+
+Audit trail when authority cannot resolve a conflict.
+
+| Column | Purpose |
+| --- | --- |
+| `claim_a_id` | Incoming (disputed) claim |
+| `claim_b_id` | Incumbent (active) claim |
+| `entity` | Subject of conflict |
+| `resolution_strategy` | e.g. `authority` |
+| `resolved_op` | Winning claim id after resolution |
+| `resolved_at` | `null` until resolved |
+
+### `entities` (entity registry)
+
+Canonical entity taxonomy for constrained extraction.
+
+| Column | Purpose |
+| --- | --- |
+| `key` | Canonical entity key, e.g. `user.timezone` |
+| `description` | Human/LLM-readable subject description |
+| `aliases` | Optional JSON array of alternate labels |
+
+Seed with `seedEntities(db, seeds)`. Enable with `useEntityRegistry: true` on `Memory` config.
+
+## Drizzle import
+
+```javascript
+import { claims, agentAuthority, disputes, entities } from "vault-memory/schema";
+```
+
+## Creating tables
+
+### Drizzle migrations (recommended)
+
+```bash
+npx drizzle-kit generate
+npx drizzle-kit push
+```
+
+Configure `drizzle.config.ts` to import schema from `vault-memory/schema`.
+
+### Raw SQL (dev / tests)
+
+For a quick test, create the `claims` table directly — see [Quickstart](/docs/quickstart).
+
+## Upgrading from v0.1.x → v0.2.0
+
+**Breaking schema change** — new tables required. Existing `claims` rows are valid as-is; upgrade is additive at the data level.
+
+```bash
+npm install vault-memory@latest
+npx drizzle-kit generate   # picks up agentAuthority + disputes
+npx drizzle-kit push
+```
+
+After migration, seed authority if you want multi-agent authority strategy:
+
+```javascript
+import { seedAuthority, EXAMPLE_AUTHORITY_SEED } from "vault-memory";
+await seedAuthority(db, EXAMPLE_AUTHORITY_SEED);
+```
+
+## Claim status semantics
+
+| Status | Indexed? | Searchable as active? |
+| --- | --- | --- |
+| `active` | Yes | Yes |
+| `superseded` | No | No |
+| `disputed` | No | Incumbent remains active winner |

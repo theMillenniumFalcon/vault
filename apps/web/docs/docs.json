@@ -57,7 +57,8 @@
               "docs/concepts/how-it-works",
               "docs/concepts/claims-and-entities",
               "docs/concepts/classification",
-              "docs/concepts/multi-agent"
+              "docs/concepts/multi-agent",
+              "docs/concepts/vector-store"
             ]
           },
           {
@@ -65,6 +66,7 @@
             "pages": [
               "docs/guides/single-agent",
               "docs/guides/multi-agent-setup",
+              "docs/guides/cli-demo",
               "docs/guides/dispute-resolution"
             ]
           },
@@ -73,6 +75,7 @@
             "pages": [
               "docs/api/memory",
               "docs/api/configuration",
+              "docs/api/schema",
               "docs/api/disputes"
             ]
           }
