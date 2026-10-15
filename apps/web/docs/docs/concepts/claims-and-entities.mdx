@@ -19,7 +19,7 @@ A **claim** is one structured fact Vault stores:
 
 ## Entity keys
 
-Entities group facts for conflict detection. Agents must agree on the **same entity string** for cross-agent resolution to trigger.
+Entities group facts about one subject. Agents must agree on the **same entity string** before Vault compares them. Compatible facts on that subject can both stay active. Only a `contradicts` label starts recency or authority.
 
 ```text
 user.diet          → diet preferences

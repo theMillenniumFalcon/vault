@@ -173,7 +173,7 @@ const scenarios: Scenario[] = [
       {
         op: "REPLACE",
         caption:
-          "Old claim is superseded, not duplicated. One entity, one active truth.",
+          "The old claim is superseded and kept as history. The meat fact is now the active one.",
         messages: [
           {
             id: "m-veg",
@@ -239,7 +239,7 @@ const scenarios: Scenario[] = [
       {
         op: "CLASSIFY",
         caption:
-          "Chat agent mentions EST on the same key. Vault compares authority before writing.",
+          "Chat agent mentions EST. The model marks it a contradiction, then authority decides.",
         messages: [
           {
             id: "m-pst",
@@ -473,8 +473,9 @@ export const ConflictExample = () => {
           <span className="text-neutral-400">One decision.</span>
         </Heading>
         <p className="max-w-lg text-sm leading-relaxed text-neutral-500">
-          New facts ADD. Corrections REPLACE. Restatements NOOP. Cross-agent
-          clashes mark the weaker claim disputed — never a silent last write.
+          New facts ADD. Same-agent corrections REPLACE. Restatements NOOP.
+          Compatible facts from another agent stay. A real clash uses authority
+          or recency, and a weaker claim is disputed rather than overwritten.
         </p>
       </div>
 

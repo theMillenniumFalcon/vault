@@ -38,19 +38,19 @@ const faqs = [
     id: "multi-agent",
     question: "How does multi-agent memory work?",
     answer:
-      "Multiple agents share one database. Vault aligns entity keys before comparing claims, then runs a cross-agent pass: recency supersedes by default, or authority when you configure entityStrategies. Equal authority on a conflict marks the claim disputed instead of silently overwriting.",
+      "Multiple agents share one database. Vault aligns subject labels, then loads every other agent's active claim on that subject. A model labels each one equivalent, compatible, or contradicting. Only contradictions use recency or authority. Equal or lower authority stores the new claim as disputed.",
   },
   {
     id: "contradictions",
     question: "What happens when facts contradict?",
     answer:
-      "Within the same agent, the classifier returns REPLACE and marks the old claim superseded. Across agents, recency or authority applies per entity (wildcards like user.* supported). Restated facts return NOOP. Equal authority conflicts surface as disputed claims with an audit trail.",
+      "The same agent gets REPLACE: the old claim is superseded and the new one is active. Across agents, a restatement writes nothing, a compatible fact is stored beside the old one, and a contradiction uses recency or authority. Wildcards like user.schedule.* are supported. Equal authority leaves an open dispute.",
   },
   {
     id: "entities",
     question: "How does entity resolution work?",
     answer:
-      "Extractors can drift labels (user.xyz vs user.timezone). Before classify, Vault embeds the entity string and aligns it to similar existing keys above entityMatchThreshold. Borderline scores can use LLM disambiguation. Optionally enable useEntityRegistry to constrain extraction to canonical keys you seed in the database.",
+      "Extractors can drift labels (user.xyz vs user.timezone). Before classify, Vault embeds the fact text and compares it with existing active claims. A score of 0.85 or higher adopts the existing subject. Between 0.70 and 0.85, an optional model call decides. Below that, the extracted label stays. useEntityRegistry can also limit extraction to keys you seed.",
   },
   {
     id: "license",

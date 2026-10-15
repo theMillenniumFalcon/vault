@@ -27,12 +27,13 @@ Restates something already known. Processing stops — no DB write.
 
 ## Cross-agent result
 
-Pass 2 only runs when pass 1 returns `ADD`. Outcomes:
+Pass 2 only runs when pass 1 returns `ADD`. Each other agent's active claim on the same entity is labeled `equivalent`, `compatible`, or `contradicts`. Policy runs only on `contradicts`.
 
 | Result | Behavior |
 | --- | --- |
-| `ADD` | No conflicts on entity — store active |
-| `REPLACE` | Supersede conflicting active claims, store incoming as active |
-| `DISPUTE` | Store incoming as `disputed`, incumbent stays active, `disputes` row |
+| `NOOP` | Equivalent to an existing claim and nothing contradicts — write nothing |
+| `ADD` | No contradicting claims — store active (compatible claims stay active) |
+| `REPLACE` | Supersede contradicting claims, store incoming as active |
+| `DISPUTE` | Store incoming as `disputed`, contradicting incumbents stay active, `disputes` row |
 
 See [Multi-agent conflict](/docs/concepts/multi-agent) for strategy details.

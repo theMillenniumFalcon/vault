@@ -14,10 +14,10 @@ Most agent memory is append-only: new facts pile on, contradictions get duplicat
     Extraction returns `entity`, `text`, and `type` (semantic or episodic) — not raw chunks.
   </Card>
   <Card title="Two-pass classify" icon="code-branch">
-    Reconcile within an agent first (ADD / UPDATE / REPLACE / NOOP), then across agents.
+    Reconcile within an agent first (ADD / UPDATE / REPLACE / NOOP), then label other agents' facts.
   </Card>
   <Card title="Multi-agent policy" icon="users">
-    `recency` or `authority` per entity — disputes when trust cannot pick a winner.
+    Compatible facts stay. Contradictions use `recency` or `authority` — disputes when trust cannot pick a winner.
   </Card>
   <Card title="Your database" icon="database">
     Drizzle + SQLite or Postgres. FAISS vector index locally; SQL is source of truth.

@@ -11,7 +11,7 @@ const steps = [
     number: "02",
     title: "Resolve & classify",
     description:
-      "Entity resolution aligns keys to existing claims (vector match, optional LLM). Then each fact is classified: ADD, UPDATE, REPLACE, or NOOP. Cross-agent conflicts use recency or authority per entity.",
+      "Align the subject label, then classify against this agent's own memory: ADD, UPDATE, REPLACE, or NOOP. A new fact is compared with other agents and labeled compatible, equivalent, or contradicting before any policy runs.",
   },
   {
     number: "03",

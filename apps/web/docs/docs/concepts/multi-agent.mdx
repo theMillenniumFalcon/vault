@@ -3,7 +3,7 @@ title: Multi-agent conflict
 description: Recency and authority strategies, disputes, and consumer-side resolution.
 ---
 
-When multiple agents share one database, pass 2 resolves conflicts on the same `entity`.
+When multiple agents share one database, pass 2 loads every other agent's active claim on the same `entity` and labels it `equivalent`, `compatible`, or `contradicts`. Compatible claims stay active together. Equivalent claims write nothing. Strategies below run only on claims labeled `contradicts`.
 
 ## Strategies
 
@@ -11,7 +11,7 @@ Configure per entity with `entityStrategies`. Unconfigured entities default to *
 
 ### Recency (default)
 
-Newest claim wins. All conflicting active claims are superseded; incoming becomes active. No `disputes` row.
+Newest contradicting claim wins. Those claims are superseded; incoming becomes active. Compatible claims on the same entity are left alone. No `disputes` row.
 
 **Trade-off:** a newer casual-chat message can overwrite an older authoritative fact.
 
@@ -19,7 +19,7 @@ Newest claim wins. All conflicting active claims are superseded; incoming become
 
 Compare `agent_authority` weights for the writing agent vs each conflicting claim's `sourceAgent` on that entity.
 
-- Incoming weight **strictly greater** than every conflict → `REPLACE`
+- Incoming weight **strictly greater** than every contradicting agent → `REPLACE`
 - Otherwise → `DISPUTE`
 
 Authority must be **seeded manually** — default weight is `0`.

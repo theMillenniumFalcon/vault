@@ -14,7 +14,7 @@ messages
   → resolveEntity (align entity label — optional similarity + LLM)
   → ensureEntityInRegistry (optional, useEntityRegistry)
   → Pass 1: own history (ADD | UPDATE | REPLACE | NOOP)
-  → if ADD: Pass 2 — other agents (recency or authority)
+  → if ADD: Pass 2 — label other agents' claims, then recency or authority on contradictions
   → apply op (write claim row + sync vector index)
 ```
 
@@ -55,7 +55,13 @@ If pass 1 is not `ADD`, pass 2 is skipped.
 
 ## 4. Pass 2 — other agents
 
-When pass 1 returns `ADD`, Vault searches for **active** claims on the same `entity` from **other** agents and applies the entity's resolution strategy (`recency` or `authority`).
+When pass 1 returns `ADD`, Vault loads every **active** claim on the same `entity` from **other** agents (from SQL, not similarity search). One LLM call labels each claim:
+
+| Label | Result |
+| --- | --- |
+| `equivalent` | Write nothing, unless another claim contradicts |
+| `compatible` | Store the new claim active; leave the others active |
+| `contradicts` | Apply `recency` or `authority` to those claims only |
 
 ## Search
 

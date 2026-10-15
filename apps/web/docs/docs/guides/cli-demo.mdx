@@ -90,7 +90,7 @@ agent-b cannot beat agent-a on timezone → **DISPUTE** instead of overwrite.
 
 ## Recency fallback demo
 
-Entities without authority config (e.g. `user.diet`) use **recency** — newest claim wins, no dispute row.
+Entities without authority config (e.g. `user.diet`) use **recency** when the model labels the older claim `contradicts`. Compatible facts, such as "vegetarian" and "likes Italian food," both stay active. A contradiction has no dispute row: the newest claim wins.
 
 Terminal 1: `I love Italian food`
 

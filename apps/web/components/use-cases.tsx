@@ -9,7 +9,7 @@ const useCases = [
     icon: Users,
     title: "Multi-agent teams",
     description:
-      "Scheduling, chat, and tool agents share one database. When two agents disagree on the same entity, Vault resolves via recency or authority — not silent last-write-wins.",
+      "Scheduling, chat, and tool agents share one database. Compatible facts on the same subject stay. Real disagreements use recency or authority, with a dispute row when trust cannot pick a winner.",
   },
   {
     icon: GitMerge,

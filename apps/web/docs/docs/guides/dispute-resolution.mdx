@@ -10,9 +10,9 @@ When authority cannot pick a winner, Vault parks the challenger as `disputed` an
 All of the following must be true:
 
 1. Pass 1 returns `ADD`
-2. Pass 2 finds active claims from **another agent** on the **same entity**
+2. Pass 2 labels at least one other agent's active claim on the **same entity** as `contradicts`
 3. Entity strategy is `authority` (not `recency`)
-4. Incoming agent's weight is **not strictly higher** than every conflicting agent
+4. Incoming agent's weight is **not strictly higher** than every contradicting agent
 
 ## Poll open disputes
 

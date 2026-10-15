@@ -40,7 +40,7 @@ const rows: ComparisonRow[] = [
   },
   {
     feature: "Multi-agent conflict resolution",
-    vault: "Authority / recency / disputed",
+    vault: "Compatible, or authority / recency",
     supermemory: "Container isolation",
     mem0: "Shared by user ID",
   },

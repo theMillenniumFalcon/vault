@@ -115,7 +115,7 @@ const classifyFeature = {
   eyebrow: "Resolve & classify",
   title: "Align keys, then write.",
   description:
-    "Entity resolution matches similar keys (vector + optional LLM) before classify runs ADD, UPDATE, REPLACE, or NOOP. Cross-agent conflicts use recency or authority per entity.",
+    "Entity resolution aligns a drifted label using the fact's embedding. Pass 1 then chooses ADD, UPDATE, REPLACE, or NOOP. Pass 2 asks whether another agent's fact on that subject is compatible, the same, or a real contradiction.",
 };
 
 const retrievalFeature = {
@@ -186,7 +186,7 @@ const multiAgentClaims: AgentClaimBoxProps[] = [
     claim: "The user is in PST",
     status: "active",
     meta: "authority 0.9",
-    context: "Heard during calendar onboarding — wins on timezone entity.",
+    context: "Calendar onboarding. EST from chat was a contradiction, so this higher-trust claim stays active.",
     detail: "onboarding-call",
   },
   {
@@ -204,7 +204,7 @@ const multiAgentClaims: AgentClaimBoxProps[] = [
     claim: "The user seems happy today",
     status: "active",
     meta: "authority 0.8",
-    context: "No conflict on mood — chat agent owns this domain.",
+    context: "Chat owns mood. A matching fact from scheduling would be labeled before any overwrite.",
     detail: "daily-checkin",
   },
   {
@@ -213,7 +213,7 @@ const multiAgentClaims: AgentClaimBoxProps[] = [
     claim: "User is building Vault",
     status: "active",
     meta: "recency",
-    context: "Tool run logged the latest repo context — newest write wins.",
+    context: "No authority on this subject. A contradicting write from another agent would win by recency.",
     detail: "repo-sync",
   },
 ];
@@ -251,8 +251,9 @@ export const Features = () => (
             <span className="text-neutral-400">not duplicated.</span>
           </Heading>
           <CardDescription className="text-sm">
-            When a user corrects themselves, REPLACE marks the prior claim as
-            superseded and stores the new one as active. One entity, one truth.
+            When the same agent corrects itself, REPLACE marks the prior claim
+            superseded and stores the new one as active. The old row stays for
+            audit. Search returns the new fact.
           </CardDescription>
         </CardContent>
         <CardFooter className="mt-auto">
@@ -299,10 +300,10 @@ export const Features = () => (
             <span className="text-neutral-400">Resolved conflicts.</span>
           </Heading>
           <CardDescription className="mb-8 text-sm">
-            Multiple agents share one database. When agent B contradicts agent A on
-            the same entity, Vault resolves via recency or authority — higher-trust
-            agents win; equal authority produces a disputed claim and audit row,
-            not a silent overwrite.
+            Multiple agents share one database. Another agent's fact on the same
+            subject can stay if both can be true. A real contradiction uses recency
+            or authority — higher trust wins, and a tie or a loss is stored as
+            disputed with an audit row.
           </CardDescription>
 
           <div className="grid gap-4 sm:grid-cols-2">
