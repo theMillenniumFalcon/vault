@@ -1,6 +1,6 @@
 # How Vault works
 
-Vault is a shared memory layer for AI agents. Several agents can write facts into one database. Each fact is a claim attributed to the agent that wrote it, and when two agents disagree, Vault either supersedes the old claim or records a dispute instead of silently overwriting.
+Vault is a shared memory layer for AI agents. Several agents can write facts into one database. Each fact is a claim attributed to the agent that wrote it. Compatible facts on the same subject stay active together. When two agents actually contradict each other, Vault either supersedes the old claim or records a dispute.
 
 The runnable pieces, ignoring `apps/web`, are the library `packages/vault-memory` and the demo `apps/cli-agent`.
 
@@ -124,25 +124,26 @@ erDiagram
 
 Each agent constructs `new Memory(agentId, { db, apiKey, entityStrategies })`. `add(messages, conversationId)` only looks at the **latest user turn** plus any assistant messages after it. Older turns are ignored for extraction.
 
+You are agent-b. The store already has one active row from agent-a: "The user is vegetarian" on `user.diet`. You type: **I like Italian food**.
+
 ```mermaid
 flowchart TD
-  M[messages] --> E[1 Extract facts with LLM]
-  E --> F{for each fact}
-  F --> EM[2 Embed fact text]
-  EM --> R[3 Align entity label]
-  R --> REG[4 Optional registry check]
-  REG --> P1[5 Pass 1: classify vs own history]
-  P1 -->|NOOP| STOP[stop, write nothing]
-  P1 -->|UPDATE or REPLACE| APPLY[write immediately, skip pass 2]
-  P1 -->|ADD| P2[6 Pass 2: other agents on same entity]
-  P2 -->|no conflict| ADD[store active]
-  P2 -->|recency, or higher authority| REP[supersede others, store active]
-  P2 -->|lower authority| DIS[store disputed + disputes row]
+  A["You type: I like Italian food"] --> B["1. Extract<br/>LLM reads this sentence only"]
+  B --> C["Fact:<br/>entity user.diet<br/>text The user likes Italian food"]
+  C --> D["2. Embed<br/>1536 numbers for that text"]
+  D --> E["3. Align entity<br/>if a very similar fact already exists,<br/>reuse its entity label"]
+  E --> F["4. Registry<br/>skipped in the CLI"]
+  F --> G["5. Pass 1<br/>compare with YOUR active claims"]
+  G --> H{"What did you already store?"}
+  H -->|same fact| N1["NOOP: write nothing"]
+  H -->|clearer wording| U["UPDATE that row in place"]
+  H -->|you contradict yourself| R["REPLACE: old row superseded,<br/>new row active"]
+  H -->|new for you| P2["6. Pass 2<br/>other agents on user.diet"]
 ```
 
 **1. Extract.** The LLM returns `{ facts: [{ entity, text, type }] }`. With the registry on, the prompt lists known keys and the model must use one of them or `new:user.something`. Unknown keys without the `new:` prefix are rejected.
 
-**2. Embed.** Default model is OpenAI `text-embedding-3-small` (1536 dimensions). That same vector is reused for entity alignment, classification, and the index.
+**2. Embed.** Default model is OpenAI `text-embedding-3-small` (1536 dimensions). That same vector is reused for entity alignment, pass 1, and the index. Pass 2 does not search by this vector.
 
 **3. Align the entity.** The extractor often invents slightly different labels for the same subject (`user.abc` vs `user.timezone`). Vault searches all active claims by the fact vector:
 
@@ -163,20 +164,62 @@ Set `entityMatchThreshold: 0` to skip this.
 | `REPLACE` | Contradicts this agent's own claim | Old row becomes `superseded` and leaves the index. New `active` row points at it via `supersedes`. |
 | `ADD` | New for this agent | Continues to pass 2 |
 
-`UPDATE` and `REPLACE` never go through cross-agent resolution. A diet change from the same agent ("I'm vegetarian" then "I eat meat now") is a pass-1 `REPLACE`.
+`UPDATE` and `REPLACE` never go through cross-agent resolution. If agent-a, who wrote "The user is vegetarian", later says "I eat meat now", pass 1 returns `REPLACE`. Pass 2 never runs. The vegetarian row becomes `superseded`, and a new `active` row points at it through `supersedes`.
 
-**6. Pass 2 — other agents, same entity.** Search is filtered to active claims whose `entity` is exactly this one and whose `sourceAgent` is not this agent. No hits means a plain `ADD`. Hits go to the strategy for that entity.
+In the Italian-food example, agent-b has no diet claim, so pass 1 returns `ADD` and pass 2 runs.
+
+**6. Pass 2 — other agents, same entity.** Vault loads every **active** claim whose `entity` is exactly this one and whose `sourceAgent` is someone else. This read comes from SQL, so a same-entity claim is included even when its embedding is far from the new fact. No rows means a plain `ADD`.
+
+When rows exist, one LLM call labels each of them:
+
+| Label | Meaning | What gets written |
+|---|---|---|
+| `equivalent` | The other agent already stored this fact | Nothing, if no row is `contradicts` |
+| `compatible` | Both facts can be true | New `active` row. The other rows stay `active` |
+| `contradicts` | They cannot both be true | Recency or authority, and only for those rows |
+
+A `contradicts` label wins over `equivalent`. Compatible rows are left alone even when another row on the same entity is superseded or disputed.
+
+```mermaid
+flowchart TD
+  A["Pass 1 said ADD"] --> B["Load from SQL, not from similarity:<br/>every active user.diet claim<br/>written by someone else"]
+  B --> C{"Any rows?"}
+  C -->|no| D["Store a new active claim"]
+  C -->|yes| E["One LLM call labels each row"]
+  E --> F{"Any label is contradicts?"}
+  F -->|yes| G["Recency or authority<br/>only on those rows"]
+  F -->|no| H{"Any label is equivalent?"}
+  H -->|yes| I["NOOP: write nothing"]
+  H -->|no, all compatible| J["Store a new active claim<br/>leave the others active"]
+```
+
+Agent-a's vegetarian row is loaded because the entity is `user.diet` and the status is `active`. The model labels it **compatible**. Vault inserts the Italian-food row as `active` and adds it to this process's FAISS index. The vegetarian row stays `active` and searchable.
 
 ## Conflict policy
 
-`entityStrategies` maps an entity (or wildcard) to `recency` or `authority`. Unlisted entities use **recency**. The most specific pattern wins, same rule as authority weights.
+Conflict policy runs only for rows labeled `contradicts`. `entityStrategies` maps an entity (or wildcard) to `recency` or `authority`. Unlisted entities use **recency**. The most specific pattern wins, same rule as authority weights.
 
-**Recency (default).** The new claim always wins. Every conflicting active claim from other agents is marked `superseded` and removed from the index. The new claim is stored `active`. No dispute row.
+**Recency (default).** The new claim wins against every contradicting row. Those rows are marked `superseded` and removed from the index. The new claim is stored `active`. Compatible rows on the same entity stay `active`. No dispute row.
 
-**Authority.** Look up weights in `agent_authority`. The incoming agent must be **strictly heavier** than every conflicting agent. Tie or lower weight is a loss.
+**Authority.** Look up weights in `agent_authority`. The incoming agent must be **strictly heavier** than every agent it contradicts. Tie or lower weight is a loss.
 
-- Win: same as recency — supersede the others, store `active`.
-- Loss: store the new claim as `disputed` and **do not index it**. The incumbent stays `active` and searchable. A `disputes` row links the two claims.
+- Win: supersede the contradicting rows, store `active`.
+- Loss: store the new claim as `disputed` and **do not index it**. Each contradicting incumbent stays `active` and searchable. A `disputes` row links the new claim to the oldest contradicting incumbent.
+
+You later type **I eat meat now**, still as agent-b. Pass 1 is `ADD` again, because you never stored a diet fact yourself. Pass 2 labels the existing rows:
+
+```mermaid
+flowchart TD
+  A["New fact: The user eats meat<br/>entity user.diet"] --> B["Other active claims on user.diet"]
+  B --> C["vegetarian → contradicts"]
+  B --> D["likes Italian food → compatible"]
+  C --> E{"Strategy for user.diet"}
+  E -->|recency, the default| F["Vegetarian row becomes superseded<br/>and leaves the index"]
+  E -->|authority and you are lighter| G["Your meat claim is stored disputed<br/>and is not indexed<br/>vegetarian stays active"]
+  E -->|authority and you are heavier| F
+  D --> H["Italian-food row stays active"]
+  F --> I["Meat claim stored active and indexed"]
+```
 
 The demo seeds this:
 
@@ -186,7 +229,7 @@ The demo seeds this:
 | `user.mood` | 0.3 | 0.8 | authority |
 | everything else | — | — | recency |
 
-Worked example: agent-a says "I'm in PST" and stores an active `user.timezone` claim. Agent-b says "I'm in EST". Pass 1 is `ADD` because agent-b has no prior timezone claim. Pass 2 finds agent-a. Weight 0.2 does not beat 0.9, so agent-b's claim is `disputed`. `/search what timezone is the user in?` still returns PST.
+Worked example: agent-a says "I'm in PST" and stores an active `user.timezone` claim. Agent-b says "I'm in EST". Pass 1 is `ADD` because agent-b has no prior timezone claim. Pass 2 loads agent-a's row and the model labels it `contradicts`. Weight 0.2 does not beat 0.9, so agent-b's claim is `disputed`. `/search what timezone is the user in?` still returns PST.
 
 A human or app later calls `resolveDispute(db, vectorStore, disputeId, winningClaimId)`. The winner becomes `active` and indexed. The loser becomes `superseded`.
 
