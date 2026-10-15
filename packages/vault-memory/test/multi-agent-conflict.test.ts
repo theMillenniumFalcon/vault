@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import type { LLMFn } from "../src/config";
 import { disputes } from "../src/db/schema";
+import { Memory } from "../src/memory";
 import { EXAMPLE_AUTHORITY_SEED, seedAuthority } from "../src/resolve";
 import { search } from "../src/search";
 import {
@@ -214,7 +216,8 @@ describe("multi-agent conflict harness", () => {
         "conv1",
       );
 
-      // Different wording, same entity → still a cross-agent conflict.
+      // The scripted cross-agent label is "contradicts", so different wording
+      // still disputes when the model says the facts cannot both be true.
       expect(added[0]?.status).toBe("disputed");
 
       const result = await search(
@@ -286,7 +289,7 @@ describe("multi-agent conflict harness", () => {
       expect(active[0]?.text).toContain("PST");
     });
 
-    test("agreeing agents: recency REPLACE, no confidence bump", async () => {
+    test("agreeing agents do not store a duplicate", async () => {
       const db = createTestDb();
       const vectorStore = createTestVectorStore();
 
@@ -297,13 +300,33 @@ describe("multi-agent conflict harness", () => {
           type: "semantic",
         },
       ]);
-      const agentB = createAgentMemory("agent-b", db, vectorStore, [
-        {
-          entity: "user.mood",
-          text: "The user is happy",
-          type: "semantic",
-        },
-      ]);
+      const agentBLlm: LLMFn = async ({ messages, schema }) => {
+        const facts = schema.safeParse({
+          facts: [
+            {
+              entity: "user.mood",
+              text: "The user is happy",
+              type: "semantic",
+            },
+          ],
+        });
+        if (facts.success) return facts.data;
+
+        const own = schema.safeParse({ op: "ADD" });
+        if (own.success) return own.data;
+
+        const user = messages.find((message) => message.role === "user")?.content ?? "";
+        const ids = [...user.matchAll(/^- id: (.+)$/gm)].map((match) => match[1]!.trim());
+        return schema.parse({
+          relations: ids.map((claimId) => ({ claimId, relation: "equivalent" })),
+        });
+      };
+      const agentB = new Memory("agent-b", {
+        db,
+        vectorStore,
+        llm: agentBLlm,
+        embed: createHarnessEmbed(),
+      });
 
       await agentA.add([{ role: "user", content: "I'm happy" }], "conv1");
       const { added } = await agentB.add(
@@ -311,14 +334,66 @@ describe("multi-agent conflict harness", () => {
         "conv1",
       );
 
-      // Agreeing writers still REPLACE via recency. Confidence does not increase.
+      expect(added).toHaveLength(0);
+      const rows = await listClaims(db);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.status).toBe("active");
+      expect(rows[0]?.sourceAgent).toBe("agent-a");
+      expect(await listDisputes(db)).toHaveLength(0);
+    });
+
+    test("compatible facts on the same entity both stay active", async () => {
+      const db = createTestDb();
+      const vectorStore = createTestVectorStore();
+
+      const agentA = createAgentMemory("agent-a", db, vectorStore, [
+        {
+          entity: "user.diet",
+          text: "The user is vegetarian",
+          type: "semantic",
+        },
+      ]);
+      const agentBLlm: LLMFn = async ({ messages, schema }) => {
+        const facts = schema.safeParse({
+          facts: [
+            {
+              entity: "user.diet",
+              text: "The user likes Italian food",
+              type: "semantic",
+            },
+          ],
+        });
+        if (facts.success) return facts.data;
+
+        const own = schema.safeParse({ op: "ADD" });
+        if (own.success) return own.data;
+
+        const user = messages.find((message) => message.role === "user")?.content ?? "";
+        const ids = [...user.matchAll(/^- id: (.+)$/gm)].map((match) => match[1]!.trim());
+        return schema.parse({
+          relations: ids.map((claimId) => ({ claimId, relation: "compatible" })),
+        });
+      };
+      const agentB = new Memory("agent-b", {
+        db,
+        vectorStore,
+        llm: agentBLlm,
+        embed: createHarnessEmbed(),
+      });
+
+      await agentA.add([{ role: "user", content: "I'm vegetarian" }], "conv1");
+      const { added } = await agentB.add(
+        [{ role: "user", content: "I like Italian food" }],
+        "conv1",
+      );
+
+      expect(added).toHaveLength(1);
       expect(added[0]?.status).toBe("active");
-      expect(added[0]?.confidence).toBe(1);
+      expect(added[0]?.text).toContain("Italian");
 
       const rows = await listClaims(db);
-      expect(rows.find((row) => row.sourceAgent === "agent-a")?.status).toBe(
-        "superseded",
-      );
+      expect(rows.every((row) => row.status === "active")).toBe(true);
+      expect(rows).toHaveLength(2);
       expect(await listDisputes(db)).toHaveLength(0);
     });
 

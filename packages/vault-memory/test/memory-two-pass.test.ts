@@ -11,6 +11,7 @@ import {
   insertClaim,
   listClaims,
 } from "./helpers/db";
+import { scriptedMemoryResponse } from "./helpers/llm";
 
 function createMemory(
   db: ReturnType<typeof createTestDb>,
@@ -42,7 +43,7 @@ describe("Memory two-pass classification", () => {
     );
 
     let call = 0;
-    const llm: LLMFn = async ({ schema }) => {
+    const llm: LLMFn = async ({ messages, schema }) => {
       call += 1;
       if (call === 1) {
         return schema.parse({
@@ -55,7 +56,7 @@ describe("Memory two-pass classification", () => {
           ],
         });
       }
-      return schema.parse({ op: "ADD" });
+      return scriptedMemoryResponse(schema, messages, { op: "ADD" });
     };
 
     const memory = createMemory(db, vectorStore, "agent-b", llm);
@@ -159,7 +160,7 @@ describe("Memory two-pass classification", () => {
     );
 
     let call = 0;
-    const llm: LLMFn = async ({ schema }) => {
+    const llm: LLMFn = async ({ messages, schema }) => {
       call += 1;
       if (call === 1) {
         return schema.parse({
@@ -172,7 +173,7 @@ describe("Memory two-pass classification", () => {
           ],
         });
       }
-      return schema.parse({ op: "ADD" });
+      return scriptedMemoryResponse(schema, messages, { op: "ADD" });
     };
 
     const memory = createMemory(db, vectorStore, "agent-a", llm, undefined, {
@@ -212,7 +213,7 @@ describe("Memory two-pass classification", () => {
     );
 
     let call = 0;
-    const llm: LLMFn = async ({ schema }) => {
+    const llm: LLMFn = async ({ messages, schema }) => {
       call += 1;
       if (call === 1) {
         return schema.parse({
@@ -225,7 +226,7 @@ describe("Memory two-pass classification", () => {
           ],
         });
       }
-      return schema.parse({ op: "ADD" });
+      return scriptedMemoryResponse(schema, messages, { op: "ADD" });
     };
 
     const memory = createMemory(db, vectorStore, "agent-b", llm, undefined, {

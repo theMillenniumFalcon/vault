@@ -100,6 +100,7 @@ export type {
   ClaimType,
   ClassifyResult,
   CrossAgentClassifyResult,
+  CrossAgentRelation,
   ExtractedFact,
   Message,
   MessageRole,

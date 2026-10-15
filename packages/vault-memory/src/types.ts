@@ -35,8 +35,12 @@ export interface ClassifyResult {
   targetClaimId?: string;
 }
 
+/** How a new fact relates to one existing claim from another agent. */
+export type CrossAgentRelation = "equivalent" | "compatible" | "contradicts";
+
 export type CrossAgentClassifyResult =
   | { op: "ADD" }
+  | { op: "NOOP" }
   | { op: "REPLACE"; supersedes: string[] }
   | { op: "DISPUTE"; conflictingClaimId: string };
 

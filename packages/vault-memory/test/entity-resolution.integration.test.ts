@@ -8,6 +8,7 @@ import {
   insertAuthority,
   listDisputes,
 } from "./helpers/db";
+import { scriptedMemoryResponse } from "./helpers/llm";
 
 /** Same vector for timezone facts so entity resolution can align labels. */
 const timezoneEmbed = async (text: string) => {
@@ -33,7 +34,7 @@ describe("entity resolution in Memory.add", () => {
     const entityStrategies = { "user.timezone": "authority" as const };
 
     let agentACalls = 0;
-    const agentALLM: LLMFn = async ({ schema }) => {
+    const agentALLM: LLMFn = async ({ messages, schema }) => {
       agentACalls += 1;
       if (agentACalls === 1) {
         return schema.parse({
@@ -46,7 +47,7 @@ describe("entity resolution in Memory.add", () => {
           ],
         });
       }
-      return schema.parse({ op: "ADD" });
+      return scriptedMemoryResponse(schema, messages, { op: "ADD" });
     };
 
     const memoryA = new Memory("agent-a", {
@@ -60,7 +61,7 @@ describe("entity resolution in Memory.add", () => {
     await memoryA.add([{ role: "user", content: "I'm in PST" }], "conv1");
 
     let agentBCalls = 0;
-    const agentBLLM: LLMFn = async ({ schema }) => {
+    const agentBLLM: LLMFn = async ({ messages, schema }) => {
       agentBCalls += 1;
       if (agentBCalls === 1) {
         return schema.parse({
@@ -73,7 +74,7 @@ describe("entity resolution in Memory.add", () => {
           ],
         });
       }
-      return schema.parse({ op: "ADD" });
+      return scriptedMemoryResponse(schema, messages, { op: "ADD" });
     };
 
     const memoryB = new Memory("agent-b", {

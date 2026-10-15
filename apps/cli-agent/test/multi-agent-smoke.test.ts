@@ -38,12 +38,18 @@ function createMockLlm(
   },
 ): LLMFn {
   let call = 0;
-  return async ({ schema }) => {
+  return async ({ messages, schema }) => {
     call += 1;
     if (call === 1) {
       return schema.parse({ facts });
     }
-    return schema.parse(classifyOp);
+    const direct = schema.safeParse(classifyOp);
+    if (direct.success) return direct.data;
+    const user = messages.find((message) => message.role === "user")?.content ?? "";
+    const ids = [...user.matchAll(/^- id: (.+)$/gm)].map((match) => match[1]!.trim());
+    return schema.parse({
+      relations: ids.map((claimId) => ({ claimId, relation: "contradicts" })),
+    });
   };
 }
 

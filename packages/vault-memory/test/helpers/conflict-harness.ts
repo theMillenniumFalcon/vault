@@ -4,6 +4,7 @@ import { Memory } from "../../src/memory";
 import type { ExtractedFact } from "../../src/types";
 import type { VectorStore } from "../../src/vector-store/types";
 import type { VaultDb } from "../../src/db/types";
+import { scriptedMemoryResponse } from "./llm";
 
 export const EMBED_DIM = 3;
 
@@ -29,12 +30,12 @@ export function createHarnessEmbed(): EmbedFn {
 
 export function createScriptedLlm(facts: ExtractedFact[]): LLMFn {
   let call = 0;
-  return async ({ schema }) => {
+  return async ({ messages, schema }) => {
     call += 1;
     if (call === 1) {
       return schema.parse({ facts });
     }
-    return schema.parse({ op: "ADD" });
+    return scriptedMemoryResponse(schema, messages, { op: "ADD" });
   };
 }
 

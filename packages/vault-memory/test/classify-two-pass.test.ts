@@ -13,6 +13,7 @@ import {
   insertAuthority,
   insertClaim,
 } from "./helpers/db";
+import { scriptedMemoryResponse } from "./helpers/llm";
 
 const fact: ExtractedFact = {
   entity: "user.timezone",
@@ -113,15 +114,19 @@ describe("classifyAgainstOtherAgents", () => {
       vectorStore,
     );
 
-    const config = createConfig(async ({ schema }) => schema.parse({ op: "ADD" }), {
-      db,
-      vectorStore,
-    });
+    const config = createConfig(
+      async ({ messages, schema }) =>
+        scriptedMemoryResponse(schema, messages, { op: "ADD" }),
+      {
+        db,
+        vectorStore,
+      },
+    );
 
     const result = await classifyAgainstOtherAgents(
       fact,
       "agent-b",
-      [1, 0, 0],
+      [0, 1, 0],
       config,
     );
 
@@ -181,11 +186,15 @@ describe("classifyAgainstOtherAgents", () => {
     );
     await insertAuthority(db, EXAMPLE_AUTHORITY_SEED);
 
-    const config = createConfig(async ({ schema }) => schema.parse({ op: "ADD" }), {
-      db,
-      vectorStore,
-      entityStrategies: { "user.timezone": "authority" },
-    });
+    const config = createConfig(
+      async ({ messages, schema }) =>
+        scriptedMemoryResponse(schema, messages, { op: "ADD" }),
+      {
+        db,
+        vectorStore,
+        entityStrategies: { "user.timezone": "authority" },
+      },
+    );
 
     const result = await classifyAgainstOtherAgents(
       { ...fact, text: "The user is in PST" },
@@ -218,11 +227,15 @@ describe("classifyAgainstOtherAgents", () => {
     );
     await insertAuthority(db, EXAMPLE_AUTHORITY_SEED);
 
-    const config = createConfig(async ({ schema }) => schema.parse({ op: "ADD" }), {
-      db,
-      vectorStore,
-      entityStrategies: { "user.timezone": "authority" },
-    });
+    const config = createConfig(
+      async ({ messages, schema }) =>
+        scriptedMemoryResponse(schema, messages, { op: "ADD" }),
+      {
+        db,
+        vectorStore,
+        entityStrategies: { "user.timezone": "authority" },
+      },
+    );
 
     const result = await classifyAgainstOtherAgents(
       fact,
@@ -235,5 +248,138 @@ describe("classifyAgainstOtherAgents", () => {
       op: "DISPUTE",
       conflictingClaimId: "agent-a-claim",
     });
+  });
+
+  test("compatible facts on the same entity stay an ADD", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "diet-claim",
+        entity: "user.diet",
+        text: "The user is vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+
+    const config = createConfig(
+      async ({ schema }) =>
+        schema.parse({
+          relations: [{ claimId: "diet-claim", relation: "compatible" }],
+        }),
+      { db, vectorStore },
+    );
+
+    const result = await classifyAgainstOtherAgents(
+      {
+        entity: "user.diet",
+        text: "The user likes Italian food",
+        type: "semantic",
+      },
+      "agent-b",
+      [0, 1, 0],
+      config,
+    );
+
+    expect(result).toEqual({ op: "ADD" });
+  });
+
+  test("equivalent cross-agent fact is a NOOP", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "diet-claim",
+        entity: "user.diet",
+        text: "The user is vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+
+    const config = createConfig(
+      async ({ schema }) =>
+        schema.parse({
+          relations: [{ claimId: "diet-claim", relation: "equivalent" }],
+        }),
+      { db, vectorStore },
+    );
+
+    const result = await classifyAgainstOtherAgents(
+      {
+        entity: "user.diet",
+        text: "The user is vegetarian",
+        type: "semantic",
+      },
+      "agent-b",
+      [1, 0, 0],
+      config,
+    );
+
+    expect(result).toEqual({ op: "NOOP" });
+  });
+
+  test("recency supersedes only the contradicting claim", async () => {
+    const db = createTestDb();
+    const vectorStore = createTestVectorStore();
+    await insertClaim(
+      db,
+      {
+        id: "vegetarian",
+        entity: "user.diet",
+        text: "The user is vegetarian",
+        type: "semantic",
+        sourceAgent: "agent-a",
+        conversationId: "conv-1",
+        embedding: [1, 0, 0],
+      },
+      vectorStore,
+    );
+    await insertClaim(
+      db,
+      {
+        id: "italian",
+        entity: "user.diet",
+        text: "The user likes Italian food",
+        type: "semantic",
+        sourceAgent: "agent-c",
+        conversationId: "conv-1",
+        embedding: [0, 1, 0],
+      },
+      vectorStore,
+    );
+
+    const config = createConfig(
+      async ({ schema }) =>
+        schema.parse({
+          relations: [
+            { claimId: "vegetarian", relation: "contradicts" },
+            { claimId: "italian", relation: "compatible" },
+          ],
+        }),
+      { db, vectorStore },
+    );
+
+    const result = await classifyAgainstOtherAgents(
+      {
+        entity: "user.diet",
+        text: "The user eats meat",
+        type: "semantic",
+      },
+      "agent-b",
+      [0, 0, 1],
+      config,
+    );
+
+    expect(result).toEqual({ op: "REPLACE", supersedes: ["vegetarian"] });
   });
 });

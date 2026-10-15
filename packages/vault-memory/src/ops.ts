@@ -171,6 +171,10 @@ export async function applyCrossAgentResolution(
     );
   }
 
+  if (resolution.op === "NOOP") {
+    throw new Error("Cross-agent NOOP does not write a claim");
+  }
+
   if (resolution.op === "REPLACE") {
     await supersedeClaims(db, vectorStore, resolution.supersedes);
     return applyOp(

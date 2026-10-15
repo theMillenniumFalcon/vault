@@ -68,6 +68,7 @@ export class Memory {
           embedding,
           this.config,
         );
+        if (crossResult.op === "NOOP") continue;
         results.push(
           await applyCrossAgentResolution(
             this.config.db,
