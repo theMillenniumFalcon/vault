@@ -8,6 +8,7 @@ import {
   searchSharedStore,
   syncVectorIndex,
 } from "./memory-setup";
+import { reviewOpenDisputes } from "./review-disputes";
 import { createDb, getDrizzleDb } from "./db";
 
 export type RunCliOptions = {
@@ -40,7 +41,7 @@ export async function runCli(options: RunCliOptions): Promise<void> {
 
   console.log(`Vault CLI agent (${options.agentId})`);
   console.log(`Database: ${options.dbPath}`);
-  console.log("Commands: /search <query>, /claims, /disputes, /quit");
+  console.log("Commands: /search <query>, /claims, /disputes, /resolve, /quit");
   console.log(
     "Multi-agent: run agent-b in another terminal against the same database file.",
   );
@@ -115,6 +116,16 @@ export async function runCli(options: RunCliOptions): Promise<void> {
         continue;
       }
 
+      if (line === "/resolve") {
+        await syncVectorIndex(vectorStore, db);
+        await reviewOpenDisputes({
+          db,
+          vectorStore,
+          ask: (prompt) => rl.question(prompt),
+        });
+        continue;
+      }
+
       messages.push({ role: "user", content: line });
       await syncVectorIndex(vectorStore, db);
       const { added } = await memory.add(messages, conversationId);
@@ -128,6 +139,19 @@ export async function runCli(options: RunCliOptions): Promise<void> {
             `  - [${claim.status}] ${claim.text} (${claim.entity})`,
           );
         }
+      }
+
+      const disputedIds = added
+        .filter((claim) => claim.status === "disputed")
+        .map((claim) => claim.id);
+      if (disputedIds.length > 0) {
+        await syncVectorIndex(vectorStore, db);
+        await reviewOpenDisputes({
+          db,
+          vectorStore,
+          ask: (prompt) => rl.question(prompt),
+          onlyClaimIds: disputedIds,
+        });
       }
 
       messages.push({

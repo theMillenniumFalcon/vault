@@ -47,7 +47,18 @@ In terminal 2 (agent-b):
 You: I'm in EST
 ```
 
-Agent-b's claim is stored as `disputed` because agent-a has higher authority on `user.timezone`. Search from either terminal still returns agent-a's PST claim:
+Agent-b's claim is stored as `disputed` because agent-a has higher authority on `user.timezone`. The terminal that stored it then asks which statement to keep:
+
+```
+user.timezone conflict
+  1. agent-a (in use): "The user is in PST"
+  2. agent-b (saved, not used): "The user is in EST"
+Pick 1 or 2, or press Enter to leave it open:
+```
+
+Choosing `1` keeps PST in search and files EST as old. Choosing `2` switches search over to EST. Pressing Enter leaves the dispute open. Either terminal can review open disputes later with `/resolve`.
+
+Search from either terminal still returns the claim that is in use:
 
 ```
 You: /search what timezone is the user in?
@@ -58,6 +69,7 @@ Inspect all rows:
 ```
 You: /claims
 You: /disputes
+You: /resolve
 ```
 
 ## How it works

@@ -44,7 +44,8 @@ Both default to `vault-shared.db`. Override with `VAULT_DB_PATH`.
 | `<message>` | Extract facts and store |
 | `/search <query>` | Cross-agent semantic search |
 | `/claims` | List all claim rows |
-| `/disputes` | List open disputes |
+| `/disputes` | List disputes, open and closed |
+| `/resolve` | Review open disputes and pick a winner |
 | `/quit` | Exit |
 
 ## Try the timezone conflict
@@ -61,21 +62,38 @@ You: I'm in PST
 You: I'm in EST
 ```
 
-Expected in terminal 2: stored claim with status **`[disputed]`**.
-
-Both terminals:
+Expected in terminal 2: stored claim with status **`[disputed]`**, then a review prompt:
 
 ```
-You: /disputes
+user.timezone conflict
+  1. agent-a (in use): "The user is in PST"
+  2. agent-b (saved, not used): "The user is in EST"
+Pick 1 or 2, or press Enter to leave it open:
 ```
 
-Expected: one open dispute on `user.timezone`, strategy `authority`.
+- `1` keeps PST in search and files EST as old.
+- `2` switches search to EST and files PST as old.
+- Enter leaves the dispute open. Search still returns PST.
+
+Either terminal can review open disputes later:
+
+```
+You: /resolve
+```
+
+Until someone picks a winner, both terminals:
 
 ```
 You: /search what timezone is the user in?
 ```
 
 Expected: top result from **agent-a**, text contains **PST**.
+
+```
+You: /disputes
+```
+
+Expected: one dispute on `user.timezone`, strategy `authority`. It stays open until `/resolve` or the prompt above closes it.
 
 ## Why agent-a wins
 
