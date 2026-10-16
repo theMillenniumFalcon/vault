@@ -48,6 +48,20 @@ const SCHEMA_SQL = `
   );
 `;
 
+const SCRIPTED_LLM = `
+function scriptedLlm(messages, schema, facts) {
+  const extracted = schema.safeParse({ facts });
+  if (extracted.success) return extracted.data;
+  const added = schema.safeParse({ op: "ADD" });
+  if (added.success) return added.data;
+  const user = (messages ?? []).find((message) => message.role === "user")?.content ?? "";
+  const ids = [...user.matchAll(/^- id: (.+)$/gm)].map((match) => match[1].trim());
+  return schema.parse({
+    relations: ids.map((claimId) => ({ claimId, relation: "contradicts" })),
+  });
+}
+`;
+
 const HARNESS_EMBED = `
 function createHarnessEmbed() {
   return async (text) => {
@@ -150,6 +164,7 @@ import {
 } from "vault-memory";
 
 ${HARNESS_EMBED}
+${SCRIPTED_LLM}
 
 const dbPath = process.argv[2];
 const sqlite = new Database(dbPath);
@@ -159,18 +174,10 @@ const db = drizzle(sqlite);
 await seedAuthority(db, EXAMPLE_AUTHORITY_SEED);
 
 const vectorStore = new MemoryVectorStore();
-let llmCalls = 0;
-const llm = async ({ schema }) => {
-  llmCalls += 1;
-  if (llmCalls === 1) {
-    return schema.parse({
-      facts: [
-        { entity: "user.timezone", text: "The user is in PST", type: "semantic" },
-      ],
-    });
-  }
-  return schema.parse({ op: "ADD" });
-};
+const llm = async ({ messages, schema }) =>
+  scriptedLlm(messages, schema, [
+    { entity: "user.timezone", text: "The user is in PST", type: "semantic" },
+  ]);
 
 const memory = new Memory("agent-a", {
   db,
@@ -200,6 +207,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { Memory, MemoryVectorStore } from "vault-memory";
 
 ${HARNESS_EMBED}
+${SCRIPTED_LLM}
 
 const dbPath = process.argv[2];
 const sqlite = new Database(dbPath);
@@ -207,18 +215,10 @@ const db = drizzle(sqlite);
 const vectorStore = new MemoryVectorStore();
 await vectorStore.rebuild(db);
 
-let llmCalls = 0;
-const llm = async ({ schema }) => {
-  llmCalls += 1;
-  if (llmCalls === 1) {
-    return schema.parse({
-      facts: [
-        { entity: "user.timezone", text: "The user is in EST", type: "semantic" },
-      ],
-    });
-  }
-  return schema.parse({ op: "ADD" });
-};
+const llm = async ({ messages, schema }) =>
+  scriptedLlm(messages, schema, [
+    { entity: "user.timezone", text: "The user is in EST", type: "semantic" },
+  ]);
 
 const memory = new Memory("agent-b", {
   db,
