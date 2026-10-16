@@ -1,6 +1,6 @@
 {
   "name": "vault-memory",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Agent-attributed memory layer for AI agents with multi-agent conflict resolution and FAISS vector search.",
   "license": "MIT",
   "type": "module",

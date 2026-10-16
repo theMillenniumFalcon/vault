@@ -15,7 +15,7 @@ export default function Home() {
     <>
       <Hero />
       <Separator />
-      <DemoVideo />
+      {/* <DemoVideo /> */}
       <Separator />
       <HowItWorks />
       <Separator />
