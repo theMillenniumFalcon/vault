@@ -14,7 +14,7 @@ export default function Home() {
   return (
     <>
       <Hero />
-      <Separator />
+      {/* <Separator /> */}
       {/* <DemoVideo /> */}
       <Separator />
       <HowItWorks />
